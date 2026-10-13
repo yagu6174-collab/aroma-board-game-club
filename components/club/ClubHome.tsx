@@ -174,7 +174,16 @@ export default function ClubHome({ content, lang }: { content: ClubContent; lang
       return kindOk && textOk;
     });
   }, [content.games, kind, query]);
-  const visibleEvents = content.events.filter((item) => item.group === group);
+  const visibleEvents = useMemo(() => {
+    return content.events
+      .filter((item) => item.group === group)
+      .slice()
+      .sort((a, b) => {
+        const aTime = a.startsAt ? new Date(a.startsAt).getTime() : 0;
+        const bTime = b.startsAt ? new Date(b.startsAt).getTime() : 0;
+        return bTime - aTime;
+      });
+  }, [content.events, group]);
   const activeGame = modal && "id" in modal ? content.games.find((item) => item.id === modal.id) : undefined;
   const activeEvent = modal?.type === "event" ? content.events.find((item) => item.id === modal.id) : undefined;
 
