@@ -20,7 +20,7 @@ function LocalLabLink() {
       href="/preview"
       className="fixed bottom-4 left-4 z-[70] rounded-full bg-slate-950 px-4 py-2 text-sm font-bold text-orange-300 shadow-lg ring-1 ring-orange-400/40"
     >
-      本地实验 ×7
+      本地实验
     </Link>
   );
 }

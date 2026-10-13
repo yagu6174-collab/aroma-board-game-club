@@ -219,12 +219,12 @@ textarea:focus-visible {
 }
 
 .dice-cursor {
-  transform: translate(-50%, -50%) rotate(-10deg);
+  transform: translate(-50%, -50%) rotate(-6deg) scale(1);
   transition: transform var(--t-micro) var(--ease-snap);
 }
 
 .dice-cursor[data-rolling="1"] {
-  transform: translate(-50%, -50%) rotate(16deg);
+  transform: translate(-50%, -50%) rotate(8deg) scale(1.06);
 }
 
 html.dice-on,
