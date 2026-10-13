@@ -1,0 +1,268 @@
+@import "tailwindcss";
+
+html,
+body {
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+:root {
+  --ease-deal: cubic-bezier(0.34, 1.3, 0.64, 1);
+  --ease-snap: cubic-bezier(0.2, 0, 0, 1);
+  --t-micro: 120ms;
+  --t-ui: 240ms;
+  --t-enter: 420ms;
+  --t-stagger: 70ms;
+}
+
+body {
+  font-family: "Noto Sans SC", "Noto Sans HK", ui-sans-serif, system-ui, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+::selection {
+  background: #fed7aa;
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid #4f46e5;
+  outline-offset: 2px;
+}
+
+@keyframes wipe {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0);
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(1.25rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes deal {
+  from {
+    opacity: 0;
+    transform: translate(1.75rem, -1.25rem) rotate(7deg);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes modal-pop {
+  from {
+    opacity: 0;
+    transform: translateY(1rem) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes menu-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-0.75rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes from-left {
+  from {
+    opacity: 0;
+    transform: translateX(-1.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes from-right {
+  from {
+    opacity: 0;
+    transform: translateX(1.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.wipe {
+  animation: wipe var(--t-enter) var(--ease-snap) both;
+}
+
+.wipe-2 {
+  animation-delay: var(--t-enter);
+}
+
+.rise-late {
+  animation: rise var(--t-enter) var(--ease-deal) both;
+  animation-delay: calc(var(--t-enter) * 2);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .await-rise:not(.inview) {
+    opacity: 0;
+    transform: translateY(1.25rem);
+  }
+
+  .await-rise.inview {
+    animation: rise var(--t-enter) var(--ease-deal) both;
+  }
+
+  .await-deal:not(.inview) {
+    opacity: 0;
+  }
+
+  .await-deal.inview {
+    animation: deal var(--t-enter) var(--ease-deal) backwards;
+    animation-delay: calc(var(--i, 0) * var(--t-stagger));
+  }
+}
+
+.modal-shade {
+  animation: fade-in var(--t-ui) var(--ease-snap) both;
+}
+
+.modal-card {
+  animation: modal-pop var(--t-enter) var(--ease-deal) both;
+}
+
+.menu-drop {
+  animation: menu-drop var(--t-ui) var(--ease-deal) both;
+}
+
+.tab-from-left {
+  animation: from-left var(--t-ui) var(--ease-snap) both;
+}
+
+.tab-from-right {
+  animation: from-right var(--t-ui) var(--ease-snap) both;
+}
+
+.splash-out {
+  animation: fade-out var(--t-enter) var(--ease-snap) both;
+}
+
+.pad-tilt {
+  transform: rotate(3deg);
+  transition: transform var(--t-ui) var(--ease-snap);
+}
+
+.photo-tilt {
+  transform: rotate(-3deg);
+  transition: transform var(--t-ui) var(--ease-snap);
+}
+
+.tilt-group:hover .pad-tilt,
+.tilt-group:hover .photo-tilt {
+  transform: rotate(0deg);
+}
+
+.card-lift {
+  transition:
+    transform var(--t-ui) var(--ease-snap),
+    border-color var(--t-ui) var(--ease-snap);
+}
+
+.card-lift:hover {
+  transform: translateY(-1px);
+  border-color: #f97316;
+}
+
+.cover-zoom {
+  transition: transform var(--t-ui) var(--ease-snap);
+}
+
+.group:hover .cover-zoom {
+  transform: scale(1.05);
+}
+
+.dice-cursor {
+  transform: translate(-50%, -50%) rotate(-10deg);
+  transition: transform var(--t-micro) var(--ease-snap);
+}
+
+.dice-cursor[data-rolling="1"] {
+  transform: translate(-50%, -50%) rotate(16deg);
+}
+
+html.dice-on,
+html.dice-on * {
+  cursor: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .splash-root {
+    display: none;
+  }
+
+  .wipe,
+  .wipe-2,
+  .rise-late,
+  .await-rise,
+  .await-deal,
+  .modal-shade,
+  .modal-card,
+  .menu-drop,
+  .tab-from-left,
+  .tab-from-right,
+  .splash-out {
+    animation: none;
+    clip-path: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .pad-tilt,
+  .photo-tilt,
+  .card-lift,
+  .cover-zoom,
+  .dice-cursor {
+    transition: none;
+  }
+}
