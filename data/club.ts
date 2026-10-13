@@ -39,6 +39,8 @@ export type ClubEvent = {
   emoji: string;
   tint: string;
   placeholder: boolean;
+  /** ISO start time for the floating “next event” countdown. */
+  startsAt?: string;
   sessions: ClubSession[];
 };
 
@@ -59,7 +61,17 @@ const ui = {
   gamesTail: "！",
   gamesMore: "更多桌游 →",
   gamesSub: "不需要高超的游戏技巧，也不需要刻意找话题。",
-  gamesNote: "人数、类型和封面是占位，可替换。「破冰抽题」是这一页里的试玩示例。",
+  gamesNote: "人数、类型和封面是占位，可替换。「破冰抽题」是这一页里的试玩示例。左右滑，或用两侧按钮翻货架。",
+  shelfPrev: "上一盒",
+  shelfNext: "下一盒",
+  shelfHint: "手机上可以直接左右滑",
+  nextLabel: "下一场",
+  nextOpen: "查看这场",
+  nextDay: "天",
+  nextHour: "时",
+  nextMin: "分",
+  nextSec: "秒",
+  nextDismiss: "收起",
   libraryTitle: "所有桌游教学",
   libraryBack: "返回",
   search: "搜索游戏名称…",
@@ -140,7 +152,17 @@ const englishUi: typeof ui = {
   gamesTail: "!",
   gamesMore: "More games →",
   gamesSub: "You do not need great skill, and you do not need to hunt for a topic.",
-  gamesNote: "Player counts, types, and covers are placeholders and can be replaced. Icebreaker Draw is the playable example on this page.",
+  gamesNote: "Player counts, types, and covers are placeholders and can be replaced. Icebreaker Draw is the playable example. Swipe, or use the side buttons.",
+  shelfPrev: "Previous",
+  shelfNext: "Next",
+  shelfHint: "Swipe sideways on a phone",
+  nextLabel: "Next up",
+  nextOpen: "See this event",
+  nextDay: "d",
+  nextHour: "h",
+  nextMin: "m",
+  nextSec: "s",
+  nextDismiss: "Hide",
   libraryTitle: "All game guides",
   libraryBack: "Back",
   search: "Search game names…",
@@ -343,6 +365,7 @@ export const clubContent = {
       emoji: "🌙",
       tint: "from-orange-200 to-amber-100",
       placeholder: false,
+      startsAt: "2026-07-18T14:00:00+08:00",
       sessions: [{ name: "周六 14:00–16:00", signed: 12, capacity: 16, placeholder: true }],
     },
     {
@@ -359,6 +382,7 @@ export const clubContent = {
       emoji: "🌅",
       tint: "from-rose-200 to-orange-100",
       placeholder: false,
+      startsAt: "2026-08-29T16:00:00+08:00",
       sessions: [{ name: "周六 16:00–18:00", signed: 10, capacity: 14, placeholder: true }],
     },
     {
@@ -375,6 +399,7 @@ export const clubContent = {
       emoji: "🃏",
       tint: "from-amber-200 to-yellow-100",
       placeholder: false,
+      startsAt: "2026-10-24T16:00:00+08:00",
       sessions: [{ name: "周六 16:00–18:00", signed: 6, capacity: 18, placeholder: true }],
     },
     {

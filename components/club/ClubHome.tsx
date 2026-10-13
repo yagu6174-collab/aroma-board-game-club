@@ -8,7 +8,25 @@ import HeroDots from "@/components/club/HeroDots";
 import type { ClubContent, ClubEvent, ClubGame, GameKind } from "@/data/club";
 import type { Lang } from "@/lib/types";
 
+function LocalLabLink() {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    const host = window.location.hostname;
+    setShow(host === "localhost" || host === "127.0.0.1");
+  }, []);
+  if (!show) return null;
+  return (
+    <Link
+      href="/preview"
+      className="fixed bottom-4 left-4 z-[70] rounded-full bg-slate-950 px-4 py-2 text-sm font-bold text-orange-300 shadow-lg ring-1 ring-orange-400/40"
+    >
+      本地实验 ×7
+    </Link>
+  );
+}
+
 const WELCOME_KEY = "aroma-welcome";
+const NEXT_DISMISS_KEY = "aroma-next-dismiss";
 const LANGS: { id: Lang; label: string }[] = [
   { id: "zh", label: "简" },
   { id: "zh-Hant", label: "繁" },
@@ -83,9 +101,15 @@ export default function ClubHome({ content, lang }: { content: ClubContent; lang
   const [errors, setErrors] = useState<string[]>([]);
   const [borrowOk, setBorrowOk] = useState(false);
   const [formNote, setFormNote] = useState(false);
+  const [nextHidden, setNextHidden] = useState(false);
+  const shelfRef = useRef<HTMLDivElement>(null);
   const about = useInview();
   const games = useInview();
   const titleId = useId();
+
+  useEffect(() => {
+    setNextHidden(window.sessionStorage.getItem(NEXT_DISMISS_KEY) === "1");
+  }, []);
 
   useEffect(() => {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -136,9 +160,12 @@ export default function ClubHome({ content, lang }: { content: ClubContent; lang
     deduce: ui.kindDeduce,
     other: ui.kindOther,
   };
-  const featured = content.featured
-    .map((id) => content.games.find((item) => item.id === id))
-    .filter((item): item is ClubGame => Boolean(item));
+  const nextEvent = useMemo(() => {
+    const now = Date.now();
+    return content.events
+      .filter((item) => item.group === "club" && item.startsAt && new Date(item.startsAt).getTime() > now)
+      .sort((a, b) => new Date(a.startsAt!).getTime() - new Date(b.startsAt!).getTime())[0];
+  }, [content.events]);
   const filtered = useMemo(() => {
     const text = query.trim().toLowerCase();
     return content.games.filter((item) => {
@@ -166,6 +193,23 @@ export default function ClubHome({ content, lang }: { content: ClubContent; lang
     setFormNote(true);
     document.getElementById("join")?.scrollIntoView({ behavior: "smooth" });
   }
+
+  function nudgeShelf(dir: -1 | 1) {
+    shelfRef.current?.scrollBy({ left: dir * 280, behavior: "smooth" });
+  }
+
+  function dismissNext() {
+    window.sessionStorage.setItem(NEXT_DISMISS_KEY, "1");
+    setNextHidden(true);
+  }
+
+  const showNext =
+    Boolean(nextEvent) &&
+    !nextHidden &&
+    splash === "off" &&
+    !welcome &&
+    !library &&
+    modal === null;
 
   function pickGroup(next: "club" | "classmate") {
     if (next === group) return;
@@ -225,7 +269,16 @@ export default function ClubHome({ content, lang }: { content: ClubContent; lang
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
+      <LocalLabLink />
       <DiceCursor />
+      {showNext && nextEvent ? (
+        <NextEventDock
+          event={nextEvent}
+          ui={ui}
+          onOpen={() => setModal({ type: "event", id: nextEvent.id })}
+          onDismiss={dismissNext}
+        />
+      ) : null}
       {splash !== "off" ? <Splash name={content.name} leaving={splash === "out"} /> : null}
       {welcome ? (
         <Welcome
@@ -376,22 +429,35 @@ export default function ClubHome({ content, lang }: { content: ClubContent; lang
               </h2>
               <p className="mx-auto mt-4 max-w-2xl text-center text-slate-300">{ui.gamesSub}</p>
               <p className="mx-auto mt-2 max-w-2xl text-center text-sm text-slate-400">{ui.gamesNote}</p>
-              <div className="mt-10 grid grid-cols-1 gap-5 md:grid-cols-3">
-                {featured.map((item, index) => (
-                  <GameCard
-                    key={item.id}
-                    game={item}
-                    index={index}
-                    shown={games.shown}
-                    ui={ui}
-                    kindLabel={kindLabel[item.kind]}
-                    kindClass={KIND_CLASS[item.kind]}
-                    onPlay={() => setModal({ type: "ice" })}
-                    onTeach={() => setModal({ type: "teach", id: item.id })}
-                    onBorrow={() => openBorrow(item.id)}
-                  />
+              <div className="mt-8 flex items-center justify-end gap-2">
+                <button type="button" aria-label={ui.shelfPrev} onClick={() => nudgeShelf(-1)} className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-600 bg-slate-800 font-bold text-white">
+                  ←
+                </button>
+                <button type="button" aria-label={ui.shelfNext} onClick={() => nudgeShelf(1)} className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-600 bg-slate-800 font-bold text-white">
+                  →
+                </button>
+              </div>
+              <div
+                ref={shelfRef}
+                className="mt-4 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              >
+                {content.games.map((item, index) => (
+                  <div key={item.id} className="w-[min(82vw,240px)] shrink-0 snap-start sm:w-[260px]">
+                    <GameCard
+                      game={item}
+                      index={index}
+                      shown={games.shown}
+                      ui={ui}
+                      kindLabel={kindLabel[item.kind]}
+                      kindClass={KIND_CLASS[item.kind]}
+                      onPlay={() => setModal({ type: "ice" })}
+                      onTeach={() => setModal({ type: "teach", id: item.id })}
+                      onBorrow={() => openBorrow(item.id)}
+                    />
+                  </div>
                 ))}
               </div>
+              <p className="mt-3 text-center text-xs text-slate-500 md:hidden">{ui.shelfHint}</p>
             </div>
           </div>
         </section>
@@ -732,6 +798,64 @@ function WhatsappIcon() {
   );
 }
 
+function NextEventDock({
+  event,
+  ui,
+  onOpen,
+  onDismiss,
+}: {
+  event: ClubEvent;
+  ui: ClubContent["ui"];
+  onOpen: () => void;
+  onDismiss: () => void;
+}) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  const remain = useMemo(() => {
+    const ms = Math.max(0, new Date(event.startsAt!).getTime() - now);
+    const total = Math.floor(ms / 1000);
+    return {
+      d: Math.floor(total / 86400),
+      h: Math.floor((total % 86400) / 3600),
+      m: Math.floor((total % 3600) / 60),
+      s: total % 60,
+    };
+  }, [event.startsAt, now]);
+
+  return (
+    <aside className="fixed right-4 bottom-4 z-[55] w-[min(100%-2rem,19rem)] rounded-[1.5rem] bg-slate-900 p-4 text-white shadow-2xl ring-2 ring-orange-400/50">
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-xs font-bold tracking-wide text-orange-300">{ui.nextLabel}</p>
+        <button type="button" onClick={onDismiss} className="text-xs font-bold text-slate-400 hover:text-white">
+          {ui.nextDismiss}
+        </button>
+      </div>
+      <h3 className="mt-1 text-lg font-black leading-snug">{event.title}</h3>
+      <p className="mt-1 text-sm text-slate-300">{event.time}</p>
+      <div className="mt-3 grid grid-cols-4 gap-1 text-center">
+        {[
+          [remain.d, ui.nextDay],
+          [remain.h, ui.nextHour],
+          [remain.m, ui.nextMin],
+          [remain.s, ui.nextSec],
+        ].map(([value, unit]) => (
+          <div key={String(unit)} className="rounded-xl bg-white/10 py-2">
+            <p className="text-lg font-black tabular-nums">{value}</p>
+            <p className="text-[10px] text-slate-400">{unit}</p>
+          </div>
+        ))}
+      </div>
+      <button type="button" onClick={onOpen} className="mt-3 inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-indigo-600 text-sm font-bold">
+        {ui.nextOpen}
+      </button>
+    </aside>
+  );
+}
+
 function GameCard({
   game,
   index,
@@ -755,7 +879,7 @@ function GameCard({
 }) {
   return (
     <article
-      className={`card-lift group overflow-hidden rounded-[2rem] border border-slate-700 bg-slate-800 ${shown ? "await-deal inview" : "await-deal"}`}
+      className={`card-lift group h-full overflow-hidden rounded-[2rem] border border-slate-700 bg-slate-800 ${shown ? "await-deal inview" : "await-deal"}`}
       style={{ ["--i" as string]: index }}
     >
       <div className="relative h-44 overflow-hidden bg-slate-900">
