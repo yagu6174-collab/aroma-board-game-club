@@ -668,13 +668,16 @@ export default function ClubHome({ content, lang }: { content: ClubContent; lang
             ) : null}
             {modal.type === "event" && activeEvent ? (
               <div role="dialog" aria-modal="true" aria-labelledby={titleId} className="modal-card max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-[2rem] bg-white shadow-xl" onClick={(event) => event.stopPropagation()}>
-                <div className={`relative h-56 bg-gradient-to-br ${activeEvent.tint}`}>
-                  <button type="button" aria-label={ui.close} onClick={() => setModal(null)} className="absolute top-3 right-3 inline-flex min-h-11 min-w-11 items-center justify-center rounded-full bg-white/80 text-xl font-bold">
+                <div className={`relative h-56 bg-gradient-to-br ${activeEvent.tint} ${eventEnded(activeEvent) ? "opacity-70" : ""}`}>
+                  <button type="button" aria-label={ui.close} onClick={() => setModal(null)} className="absolute top-3 right-3 z-10 inline-flex min-h-11 min-w-11 items-center justify-center rounded-full bg-white/80 text-xl font-bold">
                     ×
                   </button>
                   <span className="absolute inset-0 grid place-items-center text-6xl" aria-hidden>{activeEvent.emoji}</span>
+                  {eventEnded(activeEvent) ? (
+                    <div className="absolute inset-x-0 bottom-0 bg-stone-900/75 px-3 py-2 text-center text-sm font-bold text-white">{ui.endedBar}</div>
+                  ) : null}
                 </div>
-                <div className="p-6">
+                <div className={`p-6 ${eventEnded(activeEvent) ? "opacity-90" : ""}`}>
                   <h2 id={titleId} className="text-2xl font-black">{activeEvent.title}</h2>
                   <p className="mt-3 text-sm text-slate-600"><span className="font-bold text-slate-900">{ui.time}</span> {activeEvent.time}</p>
                   <p className="mt-1 text-sm text-slate-600">
@@ -682,11 +685,13 @@ export default function ClubHome({ content, lang }: { content: ClubContent; lang
                     {activeEvent.feePlaceholder ? <span className="ml-2 rounded-md bg-amber-100 px-1.5 py-0.5 text-xs font-bold text-amber-800">{ui.replace}</span> : null}
                   </p>
                   <p className="mt-1 text-sm text-slate-600"><span className="font-bold text-slate-900">{ui.place}</span> {activeEvent.place}</p>
-                  <Sessions event={activeEvent} ui={ui} />
+                  <Sessions event={activeEvent} ui={ui} ended={eventEnded(activeEvent)} />
                   <p className="mt-5 whitespace-pre-line leading-relaxed text-slate-700">{activeEvent.body}</p>
-                  <button type="button" onClick={goSignup} className="mt-6 inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-indigo-600 font-bold text-white">
-                    {ui.signup}
-                  </button>
+                  {eventEnded(activeEvent) ? null : (
+                    <button type="button" onClick={goSignup} className="mt-6 inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-indigo-600 font-bold text-white">
+                      {ui.signup}
+                    </button>
+                  )}
                 </div>
               </div>
             ) : null}
@@ -911,31 +916,46 @@ function GameCard({
   );
 }
 
+function eventEnded(event: ClubEvent) {
+  if (event.startsAt) return new Date(event.startsAt).getTime() < Date.now();
+  return event.summary.startsWith("已结束") || event.summary.startsWith("Ended");
+}
+
 function EventCard({ event, ui, onOpen }: { event: ClubEvent; ui: ClubContent["ui"]; onOpen: () => void }) {
+  const ended = eventEnded(event);
   return (
     <article className="overflow-hidden rounded-[2rem] bg-white shadow-sm">
-      <div className={`relative h-56 bg-gradient-to-br ${event.tint}`}>
+      <div className={`relative h-56 bg-gradient-to-br ${event.tint} ${ended ? "opacity-70" : ""}`}>
         <p className="absolute top-4 left-4 rounded-xl bg-white/80 px-3 py-2 text-sm font-black text-slate-900 backdrop-blur">{event.badge}</p>
         {event.placeholder ? <p className="absolute top-4 right-4 rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800">{ui.cardReplace}</p> : null}
         <span className="absolute inset-0 grid place-items-center text-6xl" aria-hidden>{event.emoji}</span>
+        {ended ? (
+          <div className="absolute inset-x-0 bottom-0 bg-stone-900/75 px-3 py-2 text-center text-sm font-bold text-white">{ui.endedBar}</div>
+        ) : null}
       </div>
-      <div className="p-5">
+      <div className={`p-5 ${ended ? "opacity-80" : ""}`}>
         <h3 className="text-xl font-black transition-colors duration-[240ms] ease-[cubic-bezier(.2,0,0,1)] hover:text-orange-500">{event.title}</h3>
         <p className="mt-2 text-sm font-bold text-orange-600">
           {event.fee}
           {event.feePlaceholder ? <span className="ml-2 rounded-md bg-amber-100 px-1.5 py-0.5 text-xs text-amber-800">{ui.replace}</span> : null}
         </p>
         <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-slate-600">{event.summary}</p>
-        <Sessions event={event} ui={ui} />
-        <button type="button" onClick={onOpen} className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-indigo-600 font-bold text-white">
-          {ui.openEvent}
+        <Sessions event={event} ui={ui} ended={ended} />
+        <button
+          type="button"
+          onClick={onOpen}
+          className={`mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-xl font-bold ${
+            ended ? "border border-stone-300 bg-white text-stone-700" : "bg-indigo-600 text-white"
+          }`}
+        >
+          {ended ? ui.openEnded : ui.openEvent}
         </button>
       </div>
     </article>
   );
 }
 
-function Sessions({ event, ui }: { event: ClubEvent; ui: ClubContent["ui"] }) {
+function Sessions({ event, ui, ended = false }: { event: ClubEvent; ui: ClubContent["ui"]; ended?: boolean }) {
   return (
     <div className="mt-4 rounded-2xl bg-slate-100 p-4 text-left">
       <p className="text-sm font-bold text-slate-800">{ui.sessions}</p>
@@ -952,7 +972,10 @@ function Sessions({ event, ui }: { event: ClubEvent; ui: ClubContent["ui"] }) {
                 </span>
               </div>
               <div className="mt-1 h-2 overflow-hidden rounded-full bg-slate-200">
-                <div className="h-full rounded-full bg-gradient-to-r from-orange-500 to-yellow-500" style={{ width: `${ratio}%` }} />
+                <div
+                  className={`h-full rounded-full ${ended ? "bg-stone-400" : "bg-gradient-to-r from-orange-500 to-yellow-500"}`}
+                  style={{ width: `${ratio}%` }}
+                />
               </div>
             </li>
           );
