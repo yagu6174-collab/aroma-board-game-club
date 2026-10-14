@@ -32,9 +32,9 @@ export default function SiteEditor({ initial }: { initial: SiteDraft }) {
     document.documentElement.classList.remove("dice-on");
   }, []);
 
-  function choose(id: string) {
+  function choose(id: string | null) {
     setSelected(id);
-    setPane("edit");
+    if (id) setPane("edit");
   }
 
   async function save() {
@@ -79,21 +79,25 @@ export default function SiteEditor({ initial }: { initial: SiteDraft }) {
           <ClubHome content={content} lang="zh" editMode selected={selected} onSelect={choose} />
         </div>
         <aside className={`w-full shrink-0 overflow-y-auto border-l border-stone-200 bg-white lg:w-96 ${pane === "preview" ? "max-lg:hidden" : ""}`}>
-          <EditorForm draft={draft} selected={selected} onChange={setDraft} />
+          <EditorForm draft={draft} selected={selected} onChange={setDraft} onSelect={choose} />
         </aside>
       </div>
     </div>
   );
 }
 
+const quietClass = "rounded-full border border-stone-300 px-3 py-1.5 text-xs font-bold";
+
 function EditorForm({
   draft,
   selected,
   onChange,
+  onSelect,
 }: {
   draft: SiteDraft;
   selected: string | null;
   onChange: (next: SiteDraft) => void;
+  onSelect: (id: string | null) => void;
 }) {
   const game = draft.games.find((item) => selected === `game:${item.id}`);
   const event = draft.events.find((item) => selected === `event:${item.id}`);
@@ -121,21 +125,13 @@ function EditorForm({
   if (selected === "join") {
     return (
       <FormShell title="加入我们">
-        <Field label="地点提示">
-          <textarea rows={3} value={draft.contact.hint} onChange={(input) => onChange({ ...draft, contact: { ...draft.contact, hint: input.target.value } })} className={fieldClass} />
+        <Field label="正文">
+          <textarea rows={5} value={draft.join} onChange={(input) => onChange({ ...draft, join: input.target.value })} className={fieldClass} />
         </Field>
-        <Field label="邮箱">
-          <input value={draft.contact.email} onChange={(input) => onChange({ ...draft, contact: { ...draft.contact, email: input.target.value } })} className={fieldClass} />
-        </Field>
-        <Field label="微信">
-          <input value={draft.contact.wechat} onChange={(input) => onChange({ ...draft, contact: { ...draft.contact, wechat: input.target.value } })} className={fieldClass} />
-        </Field>
-        <Field label="WhatsApp">
-          <input value={draft.contact.whatsapp} onChange={(input) => onChange({ ...draft, contact: { ...draft.contact, whatsapp: input.target.value } })} className={fieldClass} />
-        </Field>
-        <Field label="Instagram">
-          <input value={draft.contact.instagram} onChange={(input) => onChange({ ...draft, contact: { ...draft.contact, instagram: input.target.value } })} className={fieldClass} />
-        </Field>
+        <LinkFields
+          links={draft.links}
+          onChange={(links) => onChange({ ...draft, links })}
+        />
       </FormShell>
     );
   }
@@ -143,10 +139,22 @@ function EditorForm({
   if (game) {
     return (
       <FormShell title={game.name || "桌游"}>
-        <GameFields
-          game={game}
-          onChange={(next) => onChange({ ...draft, games: draft.games.map((item) => (item.id === game.id ? next : item)) })}
-        />
+        <GameFields game={game} onChange={(next) => onChange({ ...draft, games: draft.games.map((item) => (item.id === game.id ? next : item)) })} />
+        <div className="mt-5 flex flex-wrap gap-2">
+          <button type="button" className={quietClass} onClick={() => addGame(draft, onChange, onSelect)}>
+            加一盒
+          </button>
+          <button
+            type="button"
+            className={quietClass}
+            onClick={() => {
+              onChange({ ...draft, games: draft.games.filter((item) => item.id !== game.id) });
+              onSelect(null);
+            }}
+          >
+            删除这盒
+          </button>
+        </div>
       </FormShell>
     );
   }
@@ -154,10 +162,22 @@ function EditorForm({
   if (event) {
     return (
       <FormShell title={event.title || "活动"}>
-        <EventFields
-          event={event}
-          onChange={(next) => onChange({ ...draft, events: draft.events.map((item) => (item.id === event.id ? next : item)) })}
-        />
+        <EventFields event={event} onChange={(next) => onChange({ ...draft, events: draft.events.map((item) => (item.id === event.id ? next : item)) })} />
+        <div className="mt-5 flex flex-wrap gap-2">
+          <button type="button" className={quietClass} onClick={() => addEvent(draft, onChange, onSelect)}>
+            加一场
+          </button>
+          <button
+            type="button"
+            className={quietClass}
+            onClick={() => {
+              onChange({ ...draft, events: draft.events.filter((item) => item.id !== event.id) });
+              onSelect(null);
+            }}
+          >
+            删除这场
+          </button>
+        </div>
       </FormShell>
     );
   }
@@ -165,8 +185,49 @@ function EditorForm({
   return (
     <FormShell title="编辑">
       <p className="text-sm leading-relaxed text-stone-600">点预览里的主张、关于、一盒桌游、一张活动卡，或加入我们这段文字。</p>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <button type="button" className={quietClass} onClick={() => addGame(draft, onChange, onSelect)}>
+          加一盒桌游
+        </button>
+        <button type="button" className={quietClass} onClick={() => addEvent(draft, onChange, onSelect)}>
+          加一场活动
+        </button>
+      </div>
     </FormShell>
   );
+}
+
+function addGame(draft: SiteDraft, onChange: (next: SiteDraft) => void, onSelect: (id: string) => void) {
+  const id = `box-${Date.now()}`;
+  onChange({
+    ...draft,
+    games: [...draft.games, { id, name: "新桌游", players: "2–6 人", kind: "party", blurb: "", borrowable: false, emoji: "🎲", teachUrl: "" }],
+  });
+  onSelect(`game:${id}`);
+}
+
+function addEvent(draft: SiteDraft, onChange: (next: SiteDraft) => void, onSelect: (id: string) => void) {
+  const id = `event-${Date.now()}`;
+  onChange({
+    ...draft,
+    events: [
+      ...draft.events,
+      {
+        id,
+        group: "club",
+        title: "新活动",
+        fee: "",
+        place: "",
+        summary: "",
+        body: "",
+        time: "",
+        startsAt: "",
+        emoji: "🎲",
+        sessions: [{ name: "场次", signed: 0, capacity: 8 }],
+      },
+    ],
+  });
+  onSelect(`event:${id}`);
 }
 
 function GameFields({ game, onChange }: { game: SiteGameDraft; onChange: (next: SiteGameDraft) => void }) {
@@ -190,6 +251,12 @@ function GameFields({ game, onChange }: { game: SiteGameDraft; onChange: (next: 
       <Field label="简介">
         <textarea rows={4} value={game.blurb} onChange={(input) => onChange({ ...game, blurb: input.target.value })} className={fieldClass} />
       </Field>
+      <Field label="表情">
+        <input value={game.emoji} onChange={(input) => onChange({ ...game, emoji: input.target.value })} className={fieldClass} />
+      </Field>
+      <Field label="教学链接">
+        <input value={game.teachUrl} onChange={(input) => onChange({ ...game, teachUrl: input.target.value })} placeholder="留空则显示即将放上" className={fieldClass} />
+      </Field>
       <label className="mt-4 flex items-center gap-2 text-sm font-bold">
         <input type="checkbox" checked={game.borrowable} onChange={(input) => onChange({ ...game, borrowable: input.target.checked })} />
         可以预约借用
@@ -201,6 +268,15 @@ function GameFields({ game, onChange }: { game: SiteGameDraft; onChange: (next: 
 function EventFields({ event, onChange }: { event: SiteEventDraft; onChange: (next: SiteEventDraft) => void }) {
   return (
     <>
+      <Field label="归属">
+        <select value={event.group} onChange={(input) => onChange({ ...event, group: input.target.value as SiteEventDraft["group"] })} className={fieldClass}>
+          <option value="club">社团活动</option>
+          <option value="classmate">同学活动</option>
+        </select>
+      </Field>
+      <Field label="表情">
+        <input value={event.emoji} onChange={(input) => onChange({ ...event, emoji: input.target.value })} className={fieldClass} />
+      </Field>
       <Field label="开始时间">
         <input
           type="datetime-local"
@@ -273,6 +349,60 @@ function EventFields({ event, onChange }: { event: SiteEventDraft; onChange: (ne
               />
             </Field>
           </div>
+          <button
+            type="button"
+            className={`${quietClass} mt-3`}
+            onClick={() => onChange({ ...event, sessions: event.sessions.filter((_, i) => i !== index) })}
+          >
+            删除这场次
+          </button>
+        </fieldset>
+      ))}
+      <button
+        type="button"
+        className={`${quietClass} mt-4`}
+        onClick={() => onChange({ ...event, sessions: [...event.sessions, { name: "新场次", signed: 0, capacity: 8 }] })}
+      >
+        加一场次
+      </button>
+    </>
+  );
+}
+
+function LinkFields({
+  links,
+  onChange,
+}: {
+  links: SiteDraft["links"];
+  onChange: (next: SiteDraft["links"]) => void;
+}) {
+  const rows = [
+    ["email", "邮箱"],
+    ["wechat", "微信"],
+    ["whatsapp", "WhatsApp"],
+    ["instagram", "Instagram"],
+    ["form", "报名表格"],
+  ] as const;
+  return (
+    <>
+      {rows.map(([key, label]) => (
+        <fieldset key={key} className="mt-4 rounded-2xl border border-stone-200 p-3">
+          <legend className="px-1 text-xs font-bold text-stone-500">{label}</legend>
+          <Field label="显示文字">
+            <input
+              value={links[key].text}
+              onChange={(input) => onChange({ ...links, [key]: { ...links[key], text: input.target.value } })}
+              className={fieldClass}
+            />
+          </Field>
+          <Field label="跳转链接">
+            <input
+              value={links[key].href}
+              onChange={(input) => onChange({ ...links, [key]: { ...links[key], href: input.target.value } })}
+              placeholder="留空则不跳转"
+              className={fieldClass}
+            />
+          </Field>
         </fieldset>
       ))}
     </>

@@ -112,7 +112,6 @@ export default function ClubHome({
   const [form, setForm] = useState<BorrowForm>(emptyForm);
   const [errors, setErrors] = useState<string[]>([]);
   const [borrowOk, setBorrowOk] = useState(false);
-  const [formNote, setFormNote] = useState(false);
   const [nextHidden, setNextHidden] = useState(false);
   const shelfRef = useRef<HTMLDivElement>(null);
   const about = useInview();
@@ -209,15 +208,32 @@ export default function ClubHome({
     setWelcome(false);
   }
 
+  function openHref(href: string) {
+    const next = href.trim();
+    if (!next) return;
+    window.open(next, "_blank", "noopener,noreferrer");
+  }
+
   function goSignup() {
-    if (content.signupUrl) {
-      window.open(content.signupUrl, "_blank", "noopener,noreferrer");
+    if (content.links.form.href.trim()) {
+      openHref(content.links.form.href);
       return;
     }
     setModal(null);
     setMenu(false);
-    setFormNote(true);
     document.getElementById("join")?.scrollIntoView({ behavior: "smooth" });
+  }
+
+  function openTeach(game: ClubGame) {
+    if (editMode) {
+      choose(`game:${game.id}`);
+      return;
+    }
+    if (game.teachUrl?.trim()) {
+      openHref(game.teachUrl);
+      return;
+    }
+    setModal({ type: "teach", id: game.id });
   }
 
   function nudgeShelf(dir: -1 | 1) {
@@ -333,10 +349,10 @@ export default function ClubHome({
               <span className="hidden text-xs font-normal text-orange-500 sm:block">{content.enName}</span>
             </span>
           </a>
-          <RoundIcon href={content.instagramUrl} label="Instagram">
+          <RoundIcon href={content.links.instagram.href} label={content.links.instagram.text || "Instagram"}>
             <InstagramIcon />
           </RoundIcon>
-          <RoundIcon href={content.whatsappUrl} label="WhatsApp">
+          <RoundIcon href={content.links.whatsapp.href} label={content.links.whatsapp.text || "WhatsApp"}>
             <WhatsappIcon />
           </RoundIcon>
           <nav className="ml-auto hidden items-center gap-5 lg:flex">
@@ -499,7 +515,7 @@ export default function ClubHome({
                       kindClass={KIND_CLASS[item.kind]}
                       picked={selected === `game:${item.id}`}
                       onPlay={() => (editMode ? choose(`game:${item.id}`) : setModal({ type: "ice" }))}
-                      onTeach={() => (editMode ? choose(`game:${item.id}`) : setModal({ type: "teach", id: item.id }))}
+                      onTeach={() => openTeach(item)}
                       onBorrow={() => (editMode ? choose(`game:${item.id}`) : openBorrow(item.id))}
                     />
                   </div>
@@ -561,18 +577,13 @@ export default function ClubHome({
               >
                 {content.join}
               </p>
-              <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
-                <a href={content.whatsappUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center justify-center rounded-xl bg-green-500 px-6 font-bold text-white">
-                  {ui.joinWa}
-                </a>
-                <a href={content.instagramUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center justify-center rounded-xl bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400 px-6 font-bold text-white">
-                  {ui.joinIg}
-                </a>
-                <button type="button" onClick={goSignup} className="inline-flex min-h-11 items-center justify-center rounded-xl bg-indigo-600 px-6 font-bold text-white">
-                  {ui.joinForm}
-                </button>
+              <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+                <ChannelButton link={content.links.email} className="border border-white/30 bg-white/10" />
+                <ChannelButton link={content.links.wechat} className="bg-emerald-600" />
+                <ChannelButton link={content.links.whatsapp} className="bg-green-500" />
+                <ChannelButton link={content.links.instagram} className="bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400" />
+                <ChannelButton link={content.links.form} className="bg-indigo-600" />
               </div>
-              {!content.signupUrl || formNote ? <p className="mt-4 text-sm font-bold text-amber-200">{ui.formMissing}</p> : null}
             </div>
           </div>
         </section>
@@ -627,7 +638,7 @@ export default function ClubHome({
                     kindLabel={kindLabel[item.kind]}
                     kindClass={KIND_CLASS[item.kind]}
                     onPlay={() => setModal({ type: "ice" })}
-                    onTeach={() => setModal({ type: "teach", id: item.id })}
+                    onTeach={() => openTeach(item)}
                     onBorrow={() => openBorrow(item.id)}
                   />
                 ))}
@@ -818,12 +829,8 @@ function Welcome({ content, onClose, onJump }: { content: ClubContent; onClose: 
         <h2 id="welcome-title" className="pr-10 text-2xl font-black">{ui.welcomeTitle}</h2>
         <p className="mt-3 leading-relaxed text-slate-600">{content.welcome}</p>
         <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <a href={content.whatsappUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center justify-center rounded-xl bg-green-500 font-bold text-white">
-            WhatsApp
-          </a>
-          <a href={content.instagramUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center justify-center rounded-xl bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400 font-bold text-white">
-            Instagram
-          </a>
+          <ChannelButton link={content.links.whatsapp} className="bg-green-500" />
+          <ChannelButton link={content.links.instagram} className="bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400" />
           <button type="button" onClick={() => onJump("about")} className="inline-flex min-h-11 items-center justify-center rounded-xl border-2 border-slate-300 font-bold">
             {ui.navAbout}
           </button>
@@ -837,10 +844,28 @@ function Welcome({ content, onClose, onJump }: { content: ClubContent; onClose: 
 }
 
 function RoundIcon({ href, label, children }: { href: string; label: string; children: React.ReactNode }) {
-  if (!href) return null;
+  const className = "inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200";
+  if (!href.trim()) {
+    return (
+      <span aria-label={label} className={className}>
+        {children}
+      </span>
+    );
+  }
   return (
-    <a href={href} target="_blank" rel="noreferrer" aria-label={label} className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200">
+    <a href={href} target="_blank" rel="noreferrer" aria-label={label} className={className}>
       {children}
+    </a>
+  );
+}
+
+function ChannelButton({ link, className }: { link: { text: string; href: string }; className: string }) {
+  if (!link.text.trim()) return null;
+  const box = `inline-flex min-h-11 items-center justify-center rounded-xl px-6 font-bold text-white ${className}`;
+  if (!link.href.trim()) return <span className={box}>{link.text}</span>;
+  return (
+    <a href={link.href} target="_blank" rel="noreferrer" className={box}>
+      {link.text}
     </a>
   );
 }

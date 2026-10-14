@@ -15,33 +15,12 @@ export default async function ContactPage({ params }: { params: Promise<{ lang: 
   const { lang } = await params;
   if (!isLang(lang)) notFound();
   const [content, chrome] = await Promise.all([loadClub(lang), Promise.resolve(getChrome(lang))]);
-  const contact = content.contact;
-  const hint = contact.hint;
-  const rows: { label: string; text: string; href?: string }[] = [];
-
-  if (contact.email) {
-    rows.push({
-      label: chrome.email,
-      text: contact.email,
-      href: contact.email.includes("@") ? `mailto:${contact.email}` : undefined,
-    });
-  }
-  if (contact.wechat) rows.push({ label: chrome.wechat, text: contact.wechat });
-  if (contact.whatsapp) {
-    const digits = contact.whatsapp.replace(/\D/g, "");
-    rows.push({
-      label: chrome.whatsapp,
-      text: contact.whatsapp,
-      href: digits ? `https://wa.me/${digits}` : undefined,
-    });
-  }
-  if (contact.instagram) {
-    rows.push({
-      label: chrome.instagram,
-      text: contact.instagram,
-      href: /^https?:\/\//.test(contact.instagram) ? contact.instagram : undefined,
-    });
-  }
+  const rows = [
+    { label: chrome.email, ...content.links.email },
+    { label: chrome.wechat, ...content.links.wechat },
+    { label: chrome.whatsapp, ...content.links.whatsapp },
+    { label: chrome.instagram, ...content.links.instagram },
+  ].filter((row) => row.text);
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
@@ -55,7 +34,7 @@ export default async function ContactPage({ params }: { params: Promise<{ lang: 
             </li>
           ))}
         </ul>
-        {hint ? <p className="mt-8 text-sm text-[#8b93a7]">{hint}</p> : null}
+        {content.join ? <p className="mt-8 whitespace-pre-line text-sm text-[#8b93a7]">{content.join}</p> : null}
       </Panel>
     </main>
   );

@@ -16,6 +16,12 @@ export type ClubGame = {
   emoji: string;
   action: "play" | "teach";
   borrowable: boolean;
+  teachUrl?: string;
+};
+
+export type ClubLink = {
+  text: string;
+  href: string;
 };
 
 export type ClubSession = {
@@ -243,16 +249,16 @@ const digits = contactDoc.whatsapp.replace(/\D/g, "");
 export const clubContent = {
   name: "馨香桌游社",
   enName: "Aroma Board Game Club",
+  links: {
+    email: { text: contactDoc.email, href: contactDoc.email.includes("@") ? `mailto:${contactDoc.email}` : "" },
+    wechat: { text: contactDoc.wechat, href: "" },
+    whatsapp: { text: "加入 WhatsApp", href: digits ? `https://wa.me/${digits}` : "" },
+    instagram: { text: "Instagram", href: contactDoc.instagram },
+    form: { text: "报名表格", href: "" },
+  },
   signupUrl: "",
   whatsappUrl: digits ? `https://wa.me/${digits}` : "",
   instagramUrl: contactDoc.instagram,
-  contact: {
-    email: contactDoc.email,
-    wechat: contactDoc.wechat,
-    whatsapp: contactDoc.whatsapp,
-    instagram: contactDoc.instagram,
-    hint: contactDoc.hint,
-  },
   maxBorrowDays: 7,
   hero: {
     line1: "几张桌子、几盒游戏",
