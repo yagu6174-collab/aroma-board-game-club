@@ -246,6 +246,13 @@ export const clubContent = {
   signupUrl: "",
   whatsappUrl: digits ? `https://wa.me/${digits}` : "",
   instagramUrl: contactDoc.instagram,
+  contact: {
+    email: contactDoc.email,
+    wechat: contactDoc.wechat,
+    whatsapp: contactDoc.whatsapp,
+    instagram: contactDoc.instagram,
+    hint: contactDoc.hint,
+  },
   maxBorrowDays: 7,
   hero: {
     line1: "几张桌子、几盒游戏",
@@ -439,9 +446,9 @@ export function presentClub(content: ClubContent, lang: Lang): ClubContent {
       line2Mark: "enjoy life",
       line2After: "",
       school: "School or organisation",
-      intro: homeDoc.en.claim,
+      intro: content.hero.intro,
     },
-    welcome: homeDoc.en.claim,
+    welcome: content.welcome,
     ui: englishUi,
   };
 }

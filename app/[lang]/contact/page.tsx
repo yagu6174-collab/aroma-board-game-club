@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Panel from "@/components/Panel";
 import { getChrome } from "@/lib/chrome";
-import { readContact } from "@/lib/content";
-import { toTraditional } from "@/lib/traditional";
+import { loadClub } from "@/lib/site";
 import { isLang } from "@/lib/types";
 
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
@@ -15,8 +14,9 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
 export default async function ContactPage({ params }: { params: Promise<{ lang: string }> }) {
   const { lang } = await params;
   if (!isLang(lang)) notFound();
-  const [contact, chrome] = await Promise.all([readContact(), Promise.resolve(getChrome(lang))]);
-  const hint = lang === "zh-Hant" ? toTraditional(contact.hint) : contact.hint;
+  const [content, chrome] = await Promise.all([loadClub(lang), Promise.resolve(getChrome(lang))]);
+  const contact = content.contact;
+  const hint = contact.hint;
   const rows: { label: string; text: string; href?: string }[] = [];
 
   if (contact.email) {

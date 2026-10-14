@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import ClubHome from "@/components/club/ClubHome";
-import { clubContent, presentClub } from "@/data/club";
-import { toTraditionalValue } from "@/lib/traditional";
+import { loadClub } from "@/lib/site";
 import { isLang } from "@/lib/types";
 
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
@@ -14,6 +13,6 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
 export default async function HomePage({ params }: { params: Promise<{ lang: string }> }) {
   const { lang } = await params;
   if (!isLang(lang)) notFound();
-  const content = presentClub(lang === "zh-Hant" ? toTraditionalValue(clubContent) : clubContent, lang);
+  const content = await loadClub(lang);
   return <ClubHome content={content} lang={lang} />;
 }

@@ -83,11 +83,23 @@ function useInview() {
   return { ref, shown };
 }
 
-export default function ClubHome({ content, lang }: { content: ClubContent; lang: Lang }) {
+export default function ClubHome({
+  content,
+  lang,
+  editMode = false,
+  selected = null,
+  onSelect,
+}: {
+  content: ClubContent;
+  lang: Lang;
+  editMode?: boolean;
+  selected?: string | null;
+  onSelect?: (id: string) => void;
+}) {
   const ui = content.ui;
   const pathname = usePathname();
   const [menu, setMenu] = useState(false);
-  const [splash, setSplash] = useState<"show" | "out" | "off">("show");
+  const [splash, setSplash] = useState<"show" | "out" | "off">(editMode ? "off" : "show");
   const [welcome, setWelcome] = useState(false);
   const [library, setLibrary] = useState(false);
   const [query, setQuery] = useState("");
@@ -112,6 +124,11 @@ export default function ClubHome({ content, lang }: { content: ClubContent; lang
   }, []);
 
   useEffect(() => {
+    if (editMode) {
+      setSplash("off");
+      setWelcome(false);
+      return;
+    }
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const openWelcome = () => {
       if (window.localStorage.getItem(WELCOME_KEY) !== "1") setWelcome(true);
@@ -130,7 +147,7 @@ export default function ClubHome({ content, lang }: { content: ClubContent; lang
       window.clearTimeout(fade);
       window.clearTimeout(done);
     };
-  }, []);
+  }, [editMode]);
 
   const locked = splash !== "off" || welcome || library || modal !== null;
   useEffect(() => {
@@ -207,6 +224,11 @@ export default function ClubHome({ content, lang }: { content: ClubContent; lang
     shelfRef.current?.scrollBy({ left: dir * 280, behavior: "smooth" });
   }
 
+  function choose(id: string) {
+    if (!editMode) return;
+    onSelect?.(id);
+  }
+
   function dismissNext() {
     window.sessionStorage.setItem(NEXT_DISMISS_KEY, "1");
     setNextHidden(true);
@@ -276,15 +298,17 @@ export default function ClubHome({ content, lang }: { content: ClubContent; lang
     [ui.navJoin, "#join"],
   ] as const;
 
+  const mark = (id: string) => (editMode && selected === id ? "rounded-2xl ring-2 ring-orange-500 ring-offset-2" : "");
+
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-      <LocalLabLink />
+    <div className={`min-h-screen bg-slate-50 text-slate-900 ${editMode ? "relative" : ""}`}>
+      {editMode ? null : <LocalLabLink />}
       <DiceCursor />
       {showNext && nextEvent ? (
         <NextEventDock
           event={nextEvent}
           ui={ui}
-          onOpen={() => setModal({ type: "event", id: nextEvent.id })}
+          onOpen={() => (editMode ? choose(`event:${nextEvent.id}`) : setModal({ type: "event", id: nextEvent.id }))}
           onDismiss={dismissNext}
         />
       ) : null}
@@ -388,7 +412,12 @@ export default function ClubHome({ content, lang }: { content: ClubContent; lang
             <p className="rise-late mt-2 text-lg font-black">{content.name}</p>
             <p className="rise-late text-sm font-normal text-orange-500">{content.enName}</p>
             <p className="rise-late mt-2 text-sm text-slate-500">{ui.langLine}</p>
-            <p className="rise-late mx-auto mt-5 max-w-2xl text-base font-normal leading-relaxed text-slate-600">{content.hero.intro}</p>
+            <p
+              className={`rise-late mx-auto mt-5 max-w-2xl text-base font-normal leading-relaxed text-slate-600 ${mark("claim")} ${editMode ? "cursor-pointer" : ""}`}
+              onClick={editMode ? () => choose("claim") : undefined}
+            >
+              {content.hero.intro}
+            </p>
             <div className="rise-late mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
               <button type="button" onClick={goSignup} className="inline-flex min-h-11 items-center justify-center rounded-xl bg-indigo-600 px-6 font-bold text-white">
                 {ui.signupEvent}
@@ -406,7 +435,12 @@ export default function ClubHome({ content, lang }: { content: ClubContent; lang
               <p className="inline-flex rounded-full bg-purple-100 px-4 py-1.5 text-sm font-bold text-purple-700">{ui.aboutPill}</p>
               <h2 className="mt-4 text-3xl font-black tracking-tight md:text-4xl">{content.about.title}</h2>
               <p className="mt-5 max-w-prose leading-relaxed text-slate-600">{content.about.p1}</p>
-              <p className="mt-4 max-w-prose leading-relaxed text-slate-600">{content.about.p2}</p>
+              <p
+                className={`mt-4 max-w-prose leading-relaxed text-slate-600 ${mark("about")} ${editMode ? "cursor-pointer" : ""}`}
+                onClick={editMode ? () => choose("about") : undefined}
+              >
+                {content.about.p2}
+              </p>
             </div>
             <div className="tilt-group relative mx-auto min-h-80 w-full max-w-sm">
               <div className="pad-tilt absolute inset-x-4 top-4 bottom-0 rounded-[2rem] bg-orange-500" />
@@ -451,7 +485,11 @@ export default function ClubHome({ content, lang }: { content: ClubContent; lang
                 className="mt-4 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
               >
                 {content.games.map((item, index) => (
-                  <div key={item.id} className="w-[min(82vw,240px)] shrink-0 snap-start sm:w-[260px]">
+                  <div
+                    key={item.id}
+                    className={`w-[min(82vw,240px)] shrink-0 snap-start sm:w-[260px] ${editMode ? "cursor-pointer" : ""}`}
+                    onClick={editMode ? () => choose(`game:${item.id}`) : undefined}
+                  >
                     <GameCard
                       game={item}
                       index={index}
@@ -459,9 +497,10 @@ export default function ClubHome({ content, lang }: { content: ClubContent; lang
                       ui={ui}
                       kindLabel={kindLabel[item.kind]}
                       kindClass={KIND_CLASS[item.kind]}
-                      onPlay={() => setModal({ type: "ice" })}
-                      onTeach={() => setModal({ type: "teach", id: item.id })}
-                      onBorrow={() => openBorrow(item.id)}
+                      picked={selected === `game:${item.id}`}
+                      onPlay={() => (editMode ? choose(`game:${item.id}`) : setModal({ type: "ice" }))}
+                      onTeach={() => (editMode ? choose(`game:${item.id}`) : setModal({ type: "teach", id: item.id }))}
+                      onBorrow={() => (editMode ? choose(`game:${item.id}`) : openBorrow(item.id))}
                     />
                   </div>
                 ))}
@@ -497,7 +536,14 @@ export default function ClubHome({ content, lang }: { content: ClubContent; lang
             </div>
             <div key={`${group}-${slide}`} className={`mt-6 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3 ${slide === "from-left" ? "tab-from-left" : ""} ${slide === "from-right" ? "tab-from-right" : ""}`}>
               {visibleEvents.map((item) => (
-                <EventCard key={item.id} event={item} ui={ui} onOpen={() => setModal({ type: "event", id: item.id })} />
+                <div key={item.id} className={editMode ? "cursor-pointer" : undefined} onClick={editMode ? () => choose(`event:${item.id}`) : undefined}>
+                  <EventCard
+                    event={item}
+                    ui={ui}
+                    picked={selected === `event:${item.id}`}
+                    onOpen={() => (editMode ? choose(`event:${item.id}`) : setModal({ type: "event", id: item.id }))}
+                  />
+                </div>
               ))}
             </div>
           </div>
@@ -509,7 +555,12 @@ export default function ClubHome({ content, lang }: { content: ClubContent; lang
             <div className="pointer-events-none absolute right-0 bottom-0 h-48 w-48 rounded-full bg-purple-500/40 blur-3xl" />
             <div className="relative">
               <h2 className="text-3xl font-black tracking-tight md:text-5xl">{ui.joinTitle}</h2>
-              <p className="mx-auto mt-4 max-w-2xl leading-relaxed text-slate-300">{content.join}</p>
+              <p
+                className={`mx-auto mt-4 max-w-2xl leading-relaxed text-slate-300 ${mark("join")} ${editMode ? "cursor-pointer" : ""}`}
+                onClick={editMode ? () => choose("join") : undefined}
+              >
+                {content.join}
+              </p>
               <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
                 <a href={content.whatsappUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center justify-center rounded-xl bg-green-500 px-6 font-bold text-white">
                   {ui.joinWa}
@@ -877,6 +928,7 @@ function GameCard({
   ui,
   kindLabel,
   kindClass,
+  picked = false,
   onPlay,
   onTeach,
   onBorrow,
@@ -887,13 +939,14 @@ function GameCard({
   ui: ClubContent["ui"];
   kindLabel: string;
   kindClass: string;
+  picked?: boolean;
   onPlay: () => void;
   onTeach: () => void;
   onBorrow: () => void;
 }) {
   return (
     <article
-      className={`card-lift group h-full overflow-hidden rounded-[2rem] border border-slate-700 bg-slate-800 ${shown ? "await-deal inview" : "await-deal"}`}
+      className={`card-lift group h-full overflow-hidden rounded-[2rem] border bg-slate-800 ${picked ? "border-orange-400 ring-2 ring-orange-400" : "border-slate-700"} ${shown ? "await-deal inview" : "await-deal"}`}
       style={{ ["--i" as string]: index }}
     >
       <div className="relative h-44 overflow-hidden bg-slate-900">
@@ -930,10 +983,20 @@ function eventEnded(event: ClubEvent) {
   return event.summary.startsWith("已结束") || event.summary.startsWith("Ended");
 }
 
-function EventCard({ event, ui, onOpen }: { event: ClubEvent; ui: ClubContent["ui"]; onOpen: () => void }) {
+function EventCard({
+  event,
+  ui,
+  onOpen,
+  picked = false,
+}: {
+  event: ClubEvent;
+  ui: ClubContent["ui"];
+  onOpen: () => void;
+  picked?: boolean;
+}) {
   const ended = eventEnded(event);
   return (
-    <article className="overflow-hidden rounded-[2rem] bg-white shadow-sm">
+    <article className={`overflow-hidden rounded-[2rem] bg-white shadow-sm ${picked ? "ring-2 ring-orange-500" : ""}`}>
       <div className={`relative h-56 bg-gradient-to-br ${event.tint} ${ended ? "opacity-70" : ""}`}>
         <p className="absolute top-4 left-4 rounded-xl bg-white/80 px-3 py-2 text-sm font-black text-slate-900 backdrop-blur">{event.badge}</p>
         {event.placeholder ? <p className="absolute top-4 right-4 rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800">{ui.cardReplace}</p> : null}
