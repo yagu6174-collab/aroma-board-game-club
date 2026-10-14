@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import ClubHome from "@/components/club/ClubHome";
 import LogoutButton from "@/components/LogoutButton";
 import { clubContent } from "@/data/club";
@@ -27,6 +27,10 @@ export default function SiteEditor({ initial }: { initial: SiteDraft }) {
   const [status, setStatus] = useState("");
   const [saving, setSaving] = useState(false);
   const content = useMemo(() => applySiteDraft(clubContent, draft), [draft]);
+
+  useEffect(() => {
+    document.documentElement.classList.remove("dice-on");
+  }, []);
 
   function choose(id: string) {
     setSelected(id);

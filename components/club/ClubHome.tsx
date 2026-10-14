@@ -303,7 +303,7 @@ export default function ClubHome({
   return (
     <div className={`min-h-screen bg-slate-50 text-slate-900 ${editMode ? "relative" : ""}`}>
       {editMode ? null : <LocalLabLink />}
-      <DiceCursor />
+      {editMode ? null : <DiceCursor />}
       {showNext && nextEvent ? (
         <NextEventDock
           event={nextEvent}
