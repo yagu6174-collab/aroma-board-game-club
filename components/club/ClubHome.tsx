@@ -841,29 +841,29 @@ function NextEventDock({
   }, [event.startsAt, now]);
 
   return (
-    <aside className="fixed right-4 bottom-4 z-[55] w-[min(100%-2rem,19rem)] rounded-[1.5rem] bg-slate-900 p-4 text-white shadow-2xl ring-2 ring-orange-400/50">
+    <aside className="fixed right-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-[55] w-[12.5rem] rounded-2xl bg-slate-900 p-2.5 text-white shadow-2xl ring-2 ring-orange-400/50 sm:right-4 sm:bottom-4 sm:w-[min(100%-2rem,19rem)] sm:rounded-[1.5rem] sm:p-4">
       <div className="flex items-start justify-between gap-2">
-        <p className="text-xs font-bold tracking-wide text-orange-300">{ui.nextLabel}</p>
-        <button type="button" onClick={onDismiss} className="text-xs font-bold text-slate-400 hover:text-white">
+        <p className="text-[10px] font-bold tracking-wide text-orange-300 sm:text-xs">{ui.nextLabel}</p>
+        <button type="button" onClick={onDismiss} className="text-[10px] font-bold text-slate-400 hover:text-white sm:text-xs">
           {ui.nextDismiss}
         </button>
       </div>
-      <h3 className="mt-1 text-lg font-black leading-snug">{event.title}</h3>
-      <p className="mt-1 text-sm text-slate-300">{event.time}</p>
-      <div className="mt-3 grid grid-cols-4 gap-1 text-center">
+      <h3 className="mt-0.5 text-sm font-black leading-snug sm:mt-1 sm:text-lg">{event.title}</h3>
+      <p className="mt-0.5 text-[11px] leading-tight text-slate-300 sm:mt-1 sm:text-sm">{event.time}</p>
+      <div className="mt-2 grid grid-cols-4 gap-1 text-center sm:mt-3">
         {[
           [remain.d, ui.nextDay],
           [remain.h, ui.nextHour],
           [remain.m, ui.nextMin],
           [remain.s, ui.nextSec],
         ].map(([value, unit]) => (
-          <div key={String(unit)} className="rounded-xl bg-white/10 py-2">
-            <p className="text-lg font-black tabular-nums">{value}</p>
-            <p className="text-[10px] text-slate-400">{unit}</p>
+          <div key={String(unit)} className="rounded-lg bg-white/10 py-1 sm:rounded-xl sm:py-2">
+            <p className="text-sm font-black tabular-nums sm:text-lg">{value}</p>
+            <p className="text-[9px] text-slate-400 sm:text-[10px]">{unit}</p>
           </div>
         ))}
       </div>
-      <button type="button" onClick={onOpen} className="mt-3 inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-indigo-600 text-sm font-bold">
+      <button type="button" onClick={onOpen} className="mt-2 inline-flex min-h-8 w-full items-center justify-center rounded-lg bg-indigo-600 text-xs font-bold sm:mt-3 sm:min-h-11 sm:rounded-xl sm:text-sm">
         {ui.nextOpen}
       </button>
     </aside>
