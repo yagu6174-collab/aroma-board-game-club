@@ -579,17 +579,7 @@ export default function ClubHome({
                     event={item}
                     ui={ui}
                     picked={selected === `event:${item.id}`}
-                    onOpen={() => {
-                      if (editMode) {
-                        choose(`event:${item.id}`);
-                        return;
-                      }
-                      if (!eventEnded(item) && content.links.form.href.trim()) {
-                        goSignup();
-                        return;
-                      }
-                      setModal({ type: "event", id: item.id });
-                    }}
+                    onOpen={() => (editMode ? choose(`event:${item.id}`) : setModal({ type: "event", id: item.id }))}
                   />
                 </div>
               ))}
