@@ -74,6 +74,9 @@ export type SiteDraft = {
   about: string;
   join: string;
   photoUrl: string;
+  name: string;
+  enName: string;
+  logoUrl: string;
   heroLines: SiteHeroLines;
   sections: SiteSections;
   games: SiteGameDraft[];
@@ -137,6 +140,9 @@ export function siteDraftFrom(content: ClubContent): SiteDraft {
     about: content.about.p2,
     join: content.join,
     photoUrl: content.about.photoUrl,
+    name: content.name,
+    enName: content.enName,
+    logoUrl: content.logoUrl,
     heroLines: {
       line1: content.hero.line1,
       line2Before: content.hero.line2Before,
@@ -258,6 +264,9 @@ export function applySiteDraft(base: ClubContent, draft: SiteDraft): ClubContent
       instagram: { ...draft.links.instagram },
       form: { ...draft.links.form },
     },
+    name: draft.name,
+    enName: draft.enName,
+    logoUrl: draft.logoUrl,
     hero: { ...base.hero, ...draft.heroLines, intro: draft.claim },
     welcome: draft.claim,
     about: { ...base.about, title: draft.sections.aboutTitle, p1: draft.sections.aboutP1, p2: draft.about, photoUrl: draft.photoUrl },
@@ -298,6 +307,9 @@ export function normalizeSiteDraft(input: unknown, base: ClubContent): SiteDraft
     about: text(raw.about, seed.about),
     join: text(raw.join, seed.join),
     photoUrl: text(raw.photoUrl, seed.photoUrl),
+    name: text(raw.name, seed.name),
+    enName: text(raw.enName, seed.enName),
+    logoUrl: text(raw.logoUrl, seed.logoUrl),
     heroLines: {
       line1: text(heroRaw.line1, seed.heroLines.line1),
       line2Before: text(heroRaw.line2Before, seed.heroLines.line2Before),

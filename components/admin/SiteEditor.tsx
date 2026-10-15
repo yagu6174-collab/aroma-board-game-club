@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import Link from "next/link";
 import ClubHome from "@/components/club/ClubHome";
 import LogoutButton from "@/components/LogoutButton";
 import { clubContent } from "@/data/club";
@@ -63,6 +64,9 @@ export default function SiteEditor({ initial }: { initial: SiteDraft }) {
     <div className="flex h-dvh flex-col bg-stone-100 text-stone-900">
       <header className="flex flex-wrap items-center gap-3 border-b border-stone-200 bg-white px-4 py-3">
         <p className="text-sm font-black">后台</p>
+        <Link href="/zh" className="rounded-full border border-stone-300 px-3 py-1.5 text-sm font-bold text-stone-800">
+          回到主页
+        </Link>
         <div className="flex rounded-full bg-stone-100 p-1 lg:hidden">
           <button type="button" onClick={() => setPane("preview")} className={`rounded-full px-3 py-1 text-xs font-bold ${pane === "preview" ? "bg-white shadow" : ""}`}>
             预览
@@ -137,6 +141,21 @@ function EditorForm({
         <Field label="主张">
           <textarea rows={6} value={draft.claim} onChange={(input) => onChange({ ...draft, claim: input.target.value })} className={fieldClass} />
         </Field>
+      </FormShell>
+    );
+  }
+
+  if (selected === "brand") {
+    return (
+      <FormShell title="标志和名称">
+        <Field label="中文名">
+          <input value={draft.name} onChange={(input) => onChange({ ...draft, name: input.target.value })} className={fieldClass} />
+        </Field>
+        <Field label="英文名">
+          <input value={draft.enName} onChange={(input) => onChange({ ...draft, enName: input.target.value })} className={fieldClass} />
+        </Field>
+        <ImageField label="图标" value={draft.logoUrl} onChange={(logoUrl) => onChange({ ...draft, logoUrl })} />
+        <p className="mt-2 text-xs leading-relaxed text-stone-500">保存后，打开主页时的开场动画会换成这个图标和中文名。</p>
       </FormShell>
     );
   }

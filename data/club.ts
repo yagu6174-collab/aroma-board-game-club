@@ -255,6 +255,7 @@ const digits = contactDoc.whatsapp.replace(/\D/g, "");
 export const clubContent = {
   name: "馨香桌游社",
   enName: "Aroma Board Game Club",
+  logoUrl: "",
   links: {
     email: { text: contactDoc.email, href: contactDoc.email.includes("@") ? `mailto:${contactDoc.email}` : "" },
     wechat: { text: contactDoc.wechat, href: "" },

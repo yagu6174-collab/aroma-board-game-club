@@ -319,7 +319,8 @@ export default function ClubHome({
   function editProps(id: string) {
     if (!editMode) return {};
     return {
-      onClick: (event: { stopPropagation: () => void }) => {
+      onClick: (event: { preventDefault: () => void; stopPropagation: () => void }) => {
+        event.preventDefault();
         event.stopPropagation();
         choose(id);
       },
@@ -338,7 +339,7 @@ export default function ClubHome({
           onDismiss={dismissNext}
         />
       ) : null}
-      {splash !== "off" ? <Splash name={content.name} leaving={splash === "out"} /> : null}
+      {splash !== "off" ? <Splash name={content.name} logoUrl={content.logoUrl} leaving={splash === "out"} /> : null}
       {welcome ? (
         <Welcome
           content={content}
@@ -352,8 +353,8 @@ export default function ClubHome({
 
       <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-4 sm:px-6 lg:px-8">
-          <a href="#top" className="flex min-h-11 items-center gap-2">
-            <Mark className="h-9 w-9 rounded-xl" />
+          <a href="#top" className={`flex min-h-11 items-center gap-2 ${mark("brand")} ${editMode ? "cursor-pointer" : ""}`} {...editProps("brand")}>
+            <Mark className="h-9 w-9 rounded-xl" logoUrl={content.logoUrl} />
             <span className="leading-tight">
               <span className="block text-sm font-black">{content.name}</span>
               <span className="hidden text-xs font-normal text-orange-500 sm:block">{content.enName}</span>
@@ -852,7 +853,14 @@ function Field({ label, required, hint, children }: { label: string; required?: 
   );
 }
 
-function Mark({ className }: { className?: string }) {
+function Mark({ className, logoUrl }: { className?: string; logoUrl?: string }) {
+  if (logoUrl) {
+    return (
+      <span className={`block overflow-hidden bg-slate-900 ${className ?? ""}`} aria-hidden>
+        <img src={logoUrl} alt="" className="h-full w-full object-cover" />
+      </span>
+    );
+  }
   return (
     <span className={`grid grid-cols-3 place-items-center gap-0.5 bg-slate-900 p-1.5 ${className ?? ""}`} aria-hidden>
       {HEX.map((color) => (
@@ -862,7 +870,7 @@ function Mark({ className }: { className?: string }) {
   );
 }
 
-function Splash({ name, leaving }: { name: string; leaving: boolean }) {
+function Splash({ name, logoUrl, leaving }: { name: string; logoUrl?: string; leaving: boolean }) {
   return (
     <div className={`splash-root fixed inset-0 z-[80] grid place-items-center bg-slate-50 ${leaving ? "splash-out" : ""}`} aria-hidden>
       <span className="absolute top-[18%] left-[16%] h-2 w-2 rounded-full bg-orange-400/50" />
@@ -871,12 +879,16 @@ function Splash({ name, leaving }: { name: string; leaving: boolean }) {
       <span className="absolute right-[24%] bottom-[28%] h-2 w-2 rounded-full bg-fuchsia-400/40" />
       <span className="absolute top-[40%] left-[10%] h-1.5 w-1.5 rounded-full bg-violet-400/40" />
       <div className="text-center">
-        <div className="mx-auto grid h-52 w-52 place-items-center rounded-[2rem] bg-slate-900 shadow-xl">
-          <span className="grid grid-cols-3 gap-2">
-            {HEX.map((color) => (
-              <span key={color} className="h-9 w-9" style={{ background: color, clipPath: "polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%)" }} />
-            ))}
-          </span>
+        <div className="mx-auto grid h-52 w-52 place-items-center overflow-hidden rounded-[2rem] bg-slate-900 shadow-xl">
+          {logoUrl ? (
+            <img src={logoUrl} alt="" className="h-full w-full object-cover" />
+          ) : (
+            <span className="grid grid-cols-3 gap-2">
+              {HEX.map((color) => (
+                <span key={color} className="h-9 w-9" style={{ background: color, clipPath: "polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%)" }} />
+              ))}
+            </span>
+          )}
         </div>
         <p className="mt-6 text-2xl font-black text-slate-900">{name}</p>
       </div>
