@@ -107,6 +107,9 @@ export default function ClubHome({
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState<"all" | GameKind>("all");
   const [group, setGroup] = useState<"club" | "classmate">("club");
+  useEffect(() => {
+    if (group === "classmate" && !content.events.some((item) => item.group === "classmate")) setGroup("club");
+  }, [content.events, group]);
   const [slide, setSlide] = useState<"from-left" | "from-right" | "">("");
   const [modal, setModal] = useState<Modal>(null);
   const [topic, setTopic] = useState("");
@@ -217,13 +220,9 @@ export default function ClubHome({
   }
 
   function goSignup() {
-    if (content.links.form.href.trim()) {
-      openHref(content.links.form.href);
-      return;
-    }
-    setModal(null);
-    setMenu(false);
-    document.getElementById("join")?.scrollIntoView({ behavior: "smooth" });
+    const href = content.links.form.href.trim();
+    if (!href || editMode) return;
+    window.location.assign(href);
   }
 
   function openTeach(game: ClubGame) {
@@ -560,7 +559,9 @@ export default function ClubHome({
               {([
                 ["club", ui.tabClub],
                 ["classmate", ui.tabClass],
-              ] as const).map(([id, label]) => (
+              ] as const)
+                .filter(([id]) => id === "club" || content.events.some((item) => item.group === "classmate"))
+                .map(([id, label]) => (
                 <button
                   key={id}
                   type="button"
@@ -578,7 +579,17 @@ export default function ClubHome({
                     event={item}
                     ui={ui}
                     picked={selected === `event:${item.id}`}
-                    onOpen={() => (editMode ? choose(`event:${item.id}`) : setModal({ type: "event", id: item.id }))}
+                    onOpen={() => {
+                      if (editMode) {
+                        choose(`event:${item.id}`);
+                        return;
+                      }
+                      if (!eventEnded(item) && content.links.form.href.trim()) {
+                        goSignup();
+                        return;
+                      }
+                      setModal({ type: "event", id: item.id });
+                    }}
                   />
                 </div>
               ))}

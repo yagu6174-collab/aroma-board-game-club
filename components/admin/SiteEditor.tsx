@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import ClubHome from "@/components/club/ClubHome";
 import LogoutButton from "@/components/LogoutButton";
 import { clubContent } from "@/data/club";
@@ -26,11 +26,16 @@ export default function SiteEditor({ initial }: { initial: SiteDraft }) {
   const [pane, setPane] = useState<"preview" | "edit">("preview");
   const [status, setStatus] = useState("");
   const [saving, setSaving] = useState(false);
+  const [pending, setPending] = useState<null | { message: string; run: () => void }>(null);
   const content = useMemo(() => applySiteDraft(clubContent, draft), [draft]);
 
   useEffect(() => {
     document.documentElement.classList.remove("dice-on");
   }, []);
+
+  function ask(message: string, run: () => void) {
+    setPending({ message, run });
+  }
 
   function choose(id: string | null) {
     setSelected(id);
@@ -76,12 +81,34 @@ export default function SiteEditor({ initial }: { initial: SiteDraft }) {
       </header>
       <div className="flex min-h-0 flex-1">
         <div className={`min-w-0 flex-1 overflow-y-auto [transform:translateZ(0)] ${pane === "edit" ? "max-lg:hidden" : ""}`}>
-          <ClubHome content={content} lang="zh" editMode selected={selected} onSelect={choose} onLibraryAdd={() => addGame(draft, setDraft, choose)} />
+          <ClubHome content={content} lang="zh" editMode selected={selected} onSelect={choose} onLibraryAdd={() => ask("要新增一盒桌游吗？", () => insertGame(setDraft, choose))} />
         </div>
         <aside className={`w-full shrink-0 overflow-y-auto border-l border-stone-200 bg-white lg:w-96 ${pane === "preview" ? "max-lg:hidden" : ""}`}>
-          <EditorForm draft={draft} selected={selected} onChange={setDraft} onSelect={choose} />
+          <EditorForm draft={draft} selected={selected} onChange={setDraft} onSelect={choose} ask={ask} />
         </aside>
       </div>
+      {pending ? (
+        <div className="fixed inset-0 z-[80] grid place-items-center bg-slate-950/50 p-4">
+          <div role="dialog" aria-modal="true" className="w-full max-w-sm rounded-3xl bg-white p-6 text-stone-900 shadow-xl">
+            <p className="text-base font-bold leading-relaxed">{pending.message}</p>
+            <div className="mt-6 flex justify-end gap-2">
+              <button type="button" className={quietClass} onClick={() => setPending(null)}>
+                取消
+              </button>
+              <button
+                type="button"
+                className="rounded-full bg-indigo-600 px-4 py-2 text-sm font-bold text-white"
+                onClick={() => {
+                  pending.run();
+                  setPending(null);
+                }}
+              >
+                确定
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -93,11 +120,13 @@ function EditorForm({
   selected,
   onChange,
   onSelect,
+  ask,
 }: {
   draft: SiteDraft;
   selected: string | null;
-  onChange: (next: SiteDraft) => void;
+  onChange: (next: SiteDraft | ((current: SiteDraft) => SiteDraft)) => void;
   onSelect: (id: string | null) => void;
+  ask: (message: string, run: () => void) => void;
 }) {
   const game = draft.games.find((item) => selected === `game:${item.id}`);
   const event = draft.events.find((item) => selected === `event:${item.id}`);
@@ -231,16 +260,18 @@ function EditorForm({
       <FormShell title={game.name || "桌游"}>
         <GameFields game={game} onChange={(next) => onChange({ ...draft, games: draft.games.map((item) => (item.id === game.id ? next : item)) })} />
         <div className="mt-5 flex flex-wrap gap-2">
-          <button type="button" className={quietClass} onClick={() => addGame(draft, onChange, onSelect)}>
+          <button type="button" className={quietClass} onClick={() => ask("要新增一盒桌游吗？", () => insertGame(onChange, onSelect))}>
             加一盒
           </button>
           <button
             type="button"
             className={quietClass}
-            onClick={() => {
-              onChange({ ...draft, games: draft.games.filter((item) => item.id !== game.id) });
-              onSelect(null);
-            }}
+            onClick={() =>
+              ask(`要删除「${game.name || "这盒桌游"}」吗？`, () => {
+                onChange({ ...draft, games: draft.games.filter((item) => item.id !== game.id) });
+                onSelect(null);
+              })
+            }
           >
             删除这盒
           </button>
@@ -254,16 +285,18 @@ function EditorForm({
       <FormShell title={event.title || "活动"}>
         <EventFields event={event} onChange={(next) => onChange({ ...draft, events: draft.events.map((item) => (item.id === event.id ? next : item)) })} />
         <div className="mt-5 flex flex-wrap gap-2">
-          <button type="button" className={quietClass} onClick={() => addEvent(draft, onChange, onSelect)}>
+          <button type="button" className={quietClass} onClick={() => ask("要新增一场活动吗？", () => insertEvent(onChange, onSelect))}>
             加一场
           </button>
           <button
             type="button"
             className={quietClass}
-            onClick={() => {
-              onChange({ ...draft, events: draft.events.filter((item) => item.id !== event.id) });
-              onSelect(null);
-            }}
+            onClick={() =>
+              ask(`要删除「${event.title || "这场活动"}」吗？`, () => {
+                onChange({ ...draft, events: draft.events.filter((item) => item.id !== event.id) });
+                onSelect(null);
+              })
+            }
           >
             删除这场
           </button>
@@ -276,10 +309,10 @@ function EditorForm({
     <FormShell title="编辑">
       <p className="text-sm leading-relaxed text-stone-600">点预览里的主张、关于、一盒桌游、一张活动卡，或加入我们这段文字。</p>
       <div className="mt-4 flex flex-wrap gap-2">
-        <button type="button" className={quietClass} onClick={() => addGame(draft, onChange, onSelect)}>
+        <button type="button" className={quietClass} onClick={() => ask("要新增一盒桌游吗？", () => insertGame(onChange, onSelect))}>
           加一盒桌游
         </button>
-        <button type="button" className={quietClass} onClick={() => addEvent(draft, onChange, onSelect)}>
+        <button type="button" className={quietClass} onClick={() => ask("要新增一场活动吗？", () => insertEvent(onChange, onSelect))}>
           加一场活动
         </button>
       </div>
@@ -287,21 +320,21 @@ function EditorForm({
   );
 }
 
-function addGame(draft: SiteDraft, onChange: (next: SiteDraft) => void, onSelect: (id: string) => void) {
+function insertGame(onChange: (next: SiteDraft | ((current: SiteDraft) => SiteDraft)) => void, onSelect: (id: string) => void) {
   const id = `box-${Date.now()}`;
-  onChange({
-    ...draft,
-    games: [...draft.games, { id, name: "新桌游", players: "2–6 人", kind: "party", blurb: "", borrowable: false, emoji: "🎲", teachUrl: "", coverUrl: "", showPlay: false, showTeach: true }],
-  });
+  onChange((current) => ({
+    ...current,
+    games: [...current.games, { id, name: "新桌游", players: "2–6 人", kind: "party", blurb: "", borrowable: false, emoji: "🎲", teachUrl: "", coverUrl: "", showPlay: false, showTeach: true }],
+  }));
   onSelect(`game:${id}`);
 }
 
-function addEvent(draft: SiteDraft, onChange: (next: SiteDraft) => void, onSelect: (id: string) => void) {
+function insertEvent(onChange: (next: SiteDraft | ((current: SiteDraft) => SiteDraft)) => void, onSelect: (id: string) => void) {
   const id = `event-${Date.now()}`;
-  onChange({
-    ...draft,
+  onChange((current) => ({
+    ...current,
     events: [
-      ...draft.events,
+      ...current.events,
       {
         id,
         group: "club",
@@ -317,7 +350,7 @@ function addEvent(draft: SiteDraft, onChange: (next: SiteDraft) => void, onSelec
         sessions: [{ name: "场次", signed: 0, capacity: 8 }],
       },
     ],
-  });
+  }));
   onSelect(`event:${id}`);
 }
 
@@ -520,6 +553,7 @@ function FormShell({ title, children }: { title: string; children: ReactNode }) 
 }
 
 function ImageField({ label, value, onChange }: { label: string; value: string; onChange: (url: string) => void }) {
+  const fileRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -542,12 +576,16 @@ function ImageField({ label, value, onChange }: { label: string; value: string; 
   return (
     <div className="mt-4">
       <p className="text-sm font-bold">{label}</p>
-      <input value={value} onChange={(input) => onChange(input.target.value)} placeholder="图片地址，或在下面上传" className={fieldClass} />
+      <input value={value} onChange={(input) => onChange(input.target.value)} placeholder="也可以直接填写图片地址" className={fieldClass} />
+      <button type="button" onClick={() => fileRef.current?.click()} className="mt-3 inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-indigo-600 text-sm font-bold text-white">
+        上传图片
+      </button>
       <input
+        ref={fileRef}
         type="file"
         accept="image/*"
         onChange={(input) => void upload(input.target.files?.[0])}
-        className="mt-2 block w-full text-sm"
+        className="sr-only"
       />
       {busy ? <p className="mt-2 text-xs text-stone-500">上传中…</p> : null}
       {error ? <p className="mt-2 text-xs font-bold text-red-600">{error}</p> : null}
