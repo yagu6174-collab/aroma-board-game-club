@@ -44,25 +44,22 @@ export async function readStored(name: string): Promise<unknown | null> {
   }
 }
 
-const imageTypes: Record<string, string> = {
-  "image/jpeg": "jpg",
-  "image/png": "png",
-  "image/webp": "webp",
-  "image/gif": "gif",
-};
+function imageExtension(file: File) {
+  const fromType = file.type.startsWith("image/") ? file.type.slice("image/".length) : "";
+  const fromName = file.name.includes(".") ? file.name.split(".").pop() ?? "" : "";
+  const raw = (fromType || fromName || "img").toLowerCase().replace("jpeg", "jpg").replace(/[^a-z0-9]/g, "");
+  return raw.slice(0, 8) || "img";
+}
 
 export async function writeImage(file: File) {
-  const ext = imageTypes[file.type];
-  if (!ext) throw new Error("type");
-  if (file.size > 4 * 1024 * 1024) throw new Error("size");
-  const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${imageExtension(file)}`;
   const bytes = Buffer.from(await file.arrayBuffer());
   const blobToken = token();
   if (blobToken) {
     const blob = await put(`images/${filename}`, bytes, {
       access: "public",
       token: blobToken,
-      contentType: file.type,
+      contentType: file.type || "application/octet-stream",
     });
     return blob.url;
   }

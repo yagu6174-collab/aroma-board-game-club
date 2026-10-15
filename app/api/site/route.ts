@@ -13,5 +13,9 @@ export async function PUT(request: Request) {
   if (!(await isAuthed())) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const body = await request.json().catch(() => null);
   if (!body || typeof body !== "object") return NextResponse.json({ error: "bad" }, { status: 400 });
-  return NextResponse.json(await saveSiteDraft(body));
+  try {
+    return NextResponse.json(await saveSiteDraft(body));
+  } catch {
+    return NextResponse.json({ error: "save" }, { status: 500 });
+  }
 }

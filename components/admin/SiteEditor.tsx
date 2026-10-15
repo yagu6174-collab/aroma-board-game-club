@@ -532,7 +532,7 @@ function ImageField({ label, value, onChange }: { label: string; value: string; 
     const res = await fetch("/api/site/image", { method: "POST", body });
     setBusy(false);
     if (!res.ok) {
-      setError("没有上传。请用 jpg、png、webp 或 gif，且小于 4MB。");
+      setError("照片没有传上去，请再选一次。");
       return;
     }
     const json = (await res.json()) as { url?: string };
@@ -545,7 +545,7 @@ function ImageField({ label, value, onChange }: { label: string; value: string; 
       <input value={value} onChange={(input) => onChange(input.target.value)} placeholder="图片地址，或在下面上传" className={fieldClass} />
       <input
         type="file"
-        accept="image/jpeg,image/png,image/webp,image/gif"
+        accept="image/*"
         onChange={(input) => void upload(input.target.files?.[0])}
         className="mt-2 block w-full text-sm"
       />

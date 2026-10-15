@@ -8,3 +8,4 @@ public/uploads
 npm-debug.log*
 *.tsbuildinfo
 .vercel
+.env*
