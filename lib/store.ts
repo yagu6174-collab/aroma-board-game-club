@@ -44,6 +44,34 @@ export async function readStored(name: string): Promise<unknown | null> {
   }
 }
 
+const imageTypes: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+  "image/gif": "gif",
+};
+
+export async function writeImage(file: File) {
+  const ext = imageTypes[file.type];
+  if (!ext) throw new Error("type");
+  if (file.size > 4 * 1024 * 1024) throw new Error("size");
+  const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  const bytes = Buffer.from(await file.arrayBuffer());
+  const blobToken = token();
+  if (blobToken) {
+    const blob = await put(`images/${filename}`, bytes, {
+      access: "public",
+      token: blobToken,
+      contentType: file.type,
+    });
+    return blob.url;
+  }
+  const dir = path.join(process.cwd(), "public", "uploads");
+  await mkdir(dir, { recursive: true });
+  await writeFile(path.join(dir, filename), bytes);
+  return `/uploads/${filename}`;
+}
+
 export async function writeStored(name: string, doc: unknown) {
   const body = `${JSON.stringify(doc, null, 2)}\n`;
   const blobToken = token();

@@ -76,7 +76,7 @@ export default function SiteEditor({ initial }: { initial: SiteDraft }) {
       </header>
       <div className="flex min-h-0 flex-1">
         <div className={`min-w-0 flex-1 overflow-y-auto [transform:translateZ(0)] ${pane === "edit" ? "max-lg:hidden" : ""}`}>
-          <ClubHome content={content} lang="zh" editMode selected={selected} onSelect={choose} />
+          <ClubHome content={content} lang="zh" editMode selected={selected} onSelect={choose} onLibraryAdd={() => addGame(draft, setDraft, choose)} />
         </div>
         <aside className={`w-full shrink-0 overflow-y-auto border-l border-stone-200 bg-white lg:w-96 ${pane === "preview" ? "max-lg:hidden" : ""}`}>
           <EditorForm draft={draft} selected={selected} onChange={setDraft} onSelect={choose} />
@@ -112,6 +112,25 @@ function EditorForm({
     );
   }
 
+  if (selected === "hero") {
+    return (
+      <FormShell title="主标题">
+        <Field label="第一行">
+          <input value={draft.heroLines.line1} onChange={(input) => onChange({ ...draft, heroLines: { ...draft.heroLines, line1: input.target.value } })} className={fieldClass} />
+        </Field>
+        <Field label="第二行前">
+          <input value={draft.heroLines.line2Before} onChange={(input) => onChange({ ...draft, heroLines: { ...draft.heroLines, line2Before: input.target.value } })} className={fieldClass} />
+        </Field>
+        <Field label="第二行强调">
+          <input value={draft.heroLines.line2Mark} onChange={(input) => onChange({ ...draft, heroLines: { ...draft.heroLines, line2Mark: input.target.value } })} className={fieldClass} />
+        </Field>
+        <Field label="第二行后">
+          <input value={draft.heroLines.line2After} onChange={(input) => onChange({ ...draft, heroLines: { ...draft.heroLines, line2After: input.target.value } })} className={fieldClass} />
+        </Field>
+      </FormShell>
+    );
+  }
+
   if (selected === "about") {
     return (
       <FormShell title="关于正文">
@@ -122,9 +141,80 @@ function EditorForm({
     );
   }
 
+  if (selected === "about-pill" || selected === "about-title" || selected === "about-p1") {
+    return (
+      <FormShell title="关于">
+        <Field label="小标题">
+          <input value={draft.sections.aboutPill} onChange={(input) => onChange({ ...draft, sections: { ...draft.sections, aboutPill: input.target.value } })} className={fieldClass} />
+        </Field>
+        <Field label="标题">
+          <input value={draft.sections.aboutTitle} onChange={(input) => onChange({ ...draft, sections: { ...draft.sections, aboutTitle: input.target.value } })} className={fieldClass} />
+        </Field>
+        <Field label="第一段">
+          <textarea rows={5} value={draft.sections.aboutP1} onChange={(input) => onChange({ ...draft, sections: { ...draft.sections, aboutP1: input.target.value } })} className={fieldClass} />
+        </Field>
+      </FormShell>
+    );
+  }
+
+  if (selected === "about-photo") {
+    return (
+      <FormShell title="社团照片">
+        <ImageField label="图片" value={draft.photoUrl} onChange={(photoUrl) => onChange({ ...draft, photoUrl })} />
+      </FormShell>
+    );
+  }
+
+  if (selected === "games-copy") {
+    return (
+      <FormShell title="桌游区文字">
+        <Field label="小标题">
+          <input value={draft.sections.gamesPill} onChange={(input) => onChange({ ...draft, sections: { ...draft.sections, gamesPill: input.target.value } })} className={fieldClass} />
+        </Field>
+        <Field label="大标题前">
+          <input value={draft.sections.gamesLead} onChange={(input) => onChange({ ...draft, sections: { ...draft.sections, gamesLead: input.target.value } })} className={fieldClass} />
+        </Field>
+        <Field label="大标题强调">
+          <input value={draft.sections.gamesMark} onChange={(input) => onChange({ ...draft, sections: { ...draft.sections, gamesMark: input.target.value } })} className={fieldClass} />
+        </Field>
+        <Field label="大标题后">
+          <input value={draft.sections.gamesTail} onChange={(input) => onChange({ ...draft, sections: { ...draft.sections, gamesTail: input.target.value } })} className={fieldClass} />
+        </Field>
+        <Field label="说明">
+          <textarea rows={3} value={draft.sections.gamesSub} onChange={(input) => onChange({ ...draft, sections: { ...draft.sections, gamesSub: input.target.value } })} className={fieldClass} />
+        </Field>
+        <Field label="补充说明">
+          <textarea rows={3} value={draft.sections.gamesNote} onChange={(input) => onChange({ ...draft, sections: { ...draft.sections, gamesNote: input.target.value } })} className={fieldClass} />
+        </Field>
+        <Field label="教学库标题">
+          <input value={draft.sections.libraryTitle} onChange={(input) => onChange({ ...draft, sections: { ...draft.sections, libraryTitle: input.target.value } })} className={fieldClass} />
+        </Field>
+      </FormShell>
+    );
+  }
+
+  if (selected === "news-copy") {
+    return (
+      <FormShell title="活动区文字">
+        <Field label="小标题">
+          <input value={draft.sections.newsPill} onChange={(input) => onChange({ ...draft, sections: { ...draft.sections, newsPill: input.target.value } })} className={fieldClass} />
+        </Field>
+        <Field label="标题">
+          <input value={draft.sections.newsTitle} onChange={(input) => onChange({ ...draft, sections: { ...draft.sections, newsTitle: input.target.value } })} className={fieldClass} />
+        </Field>
+        <Field label="说明">
+          <textarea rows={3} value={draft.sections.newsAside} onChange={(input) => onChange({ ...draft, sections: { ...draft.sections, newsAside: input.target.value } })} className={fieldClass} />
+        </Field>
+      </FormShell>
+    );
+  }
+
   if (selected === "join") {
     return (
       <FormShell title="加入我们">
+        <Field label="标题">
+          <input value={draft.sections.joinTitle} onChange={(input) => onChange({ ...draft, sections: { ...draft.sections, joinTitle: input.target.value } })} className={fieldClass} />
+        </Field>
         <Field label="正文">
           <textarea rows={5} value={draft.join} onChange={(input) => onChange({ ...draft, join: input.target.value })} className={fieldClass} />
         </Field>
@@ -201,7 +291,7 @@ function addGame(draft: SiteDraft, onChange: (next: SiteDraft) => void, onSelect
   const id = `box-${Date.now()}`;
   onChange({
     ...draft,
-    games: [...draft.games, { id, name: "新桌游", players: "2–6 人", kind: "party", blurb: "", borrowable: false, emoji: "🎲", teachUrl: "" }],
+    games: [...draft.games, { id, name: "新桌游", players: "2–6 人", kind: "party", blurb: "", borrowable: false, emoji: "🎲", teachUrl: "", coverUrl: "", showPlay: false, showTeach: true }],
   });
   onSelect(`game:${id}`);
 }
@@ -223,6 +313,7 @@ function addEvent(draft: SiteDraft, onChange: (next: SiteDraft) => void, onSelec
         time: "",
         startsAt: "",
         emoji: "🎲",
+        coverUrl: "",
         sessions: [{ name: "场次", signed: 0, capacity: 8 }],
       },
     ],
@@ -254,6 +345,15 @@ function GameFields({ game, onChange }: { game: SiteGameDraft; onChange: (next: 
       <Field label="表情">
         <input value={game.emoji} onChange={(input) => onChange({ ...game, emoji: input.target.value })} className={fieldClass} />
       </Field>
+      <ImageField label="封面" value={game.coverUrl} onChange={(coverUrl) => onChange({ ...game, coverUrl })} />
+      <label className="mt-4 flex items-center gap-2 text-sm font-bold">
+        <input type="checkbox" checked={game.showPlay} onChange={(input) => onChange({ ...game, showPlay: input.target.checked })} />
+        显示「立即试玩」
+      </label>
+      <label className="mt-3 flex items-center gap-2 text-sm font-bold">
+        <input type="checkbox" checked={game.showTeach} onChange={(input) => onChange({ ...game, showTeach: input.target.checked })} />
+        显示「观看教学」
+      </label>
       <Field label="教学链接">
         <input value={game.teachUrl} onChange={(input) => onChange({ ...game, teachUrl: input.target.value })} placeholder="留空则显示即将放上" className={fieldClass} />
       </Field>
@@ -277,6 +377,7 @@ function EventFields({ event, onChange }: { event: SiteEventDraft; onChange: (ne
       <Field label="表情">
         <input value={event.emoji} onChange={(input) => onChange({ ...event, emoji: input.target.value })} className={fieldClass} />
       </Field>
+      <ImageField label="封面" value={event.coverUrl} onChange={(coverUrl) => onChange({ ...event, coverUrl })} />
       <Field label="开始时间">
         <input
           type="datetime-local"
@@ -414,6 +515,50 @@ function FormShell({ title, children }: { title: string; children: ReactNode }) 
     <div className="px-4 py-5">
       <h2 className="text-lg font-black">{title}</h2>
       {children}
+    </div>
+  );
+}
+
+function ImageField({ label, value, onChange }: { label: string; value: string; onChange: (url: string) => void }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  async function upload(file: File | undefined) {
+    if (!file) return;
+    setBusy(true);
+    setError("");
+    const body = new FormData();
+    body.set("file", file);
+    const res = await fetch("/api/site/image", { method: "POST", body });
+    setBusy(false);
+    if (!res.ok) {
+      setError("没有上传。请用 jpg、png、webp 或 gif，且小于 4MB。");
+      return;
+    }
+    const json = (await res.json()) as { url?: string };
+    if (json.url) onChange(json.url);
+  }
+
+  return (
+    <div className="mt-4">
+      <p className="text-sm font-bold">{label}</p>
+      <input value={value} onChange={(input) => onChange(input.target.value)} placeholder="图片地址，或在下面上传" className={fieldClass} />
+      <input
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/gif"
+        onChange={(input) => void upload(input.target.files?.[0])}
+        className="mt-2 block w-full text-sm"
+      />
+      {busy ? <p className="mt-2 text-xs text-stone-500">上传中…</p> : null}
+      {error ? <p className="mt-2 text-xs font-bold text-red-600">{error}</p> : null}
+      {value ? (
+        <>
+          <img src={value} alt="" className="mt-2 h-28 w-full rounded-xl object-cover" />
+          <button type="button" className={`${quietClass} mt-2`} onClick={() => onChange("")}>
+            去掉图片
+          </button>
+        </>
+      ) : null}
     </div>
   );
 }

@@ -89,12 +89,14 @@ export default function ClubHome({
   editMode = false,
   selected = null,
   onSelect,
+  onLibraryAdd,
 }: {
   content: ClubContent;
   lang: Lang;
   editMode?: boolean;
   selected?: string | null;
   onSelect?: (id: string) => void;
+  onLibraryAdd?: () => void;
 }) {
   const ui = content.ui;
   const pathname = usePathname();
@@ -315,6 +317,15 @@ export default function ClubHome({
   ] as const;
 
   const mark = (id: string) => (editMode && selected === id ? "rounded-2xl ring-2 ring-orange-500 ring-offset-2" : "");
+  function editProps(id: string) {
+    if (!editMode) return {};
+    return {
+      onClick: (event: { stopPropagation: () => void }) => {
+        event.stopPropagation();
+        choose(id);
+      },
+    };
+  }
 
   return (
     <div className={`min-h-screen bg-slate-50 text-slate-900 ${editMode ? "relative" : ""}`}>
@@ -414,7 +425,7 @@ export default function ClubHome({
         <section id="top" className="relative flex min-h-[65vh] items-center overflow-hidden md:min-h-[85vh]">
           <HeroDots />
           <div className="relative z-10 mx-auto w-full max-w-6xl px-4 py-16 text-center sm:px-6 lg:px-8">
-            <h1 className="text-4xl leading-tight font-black tracking-tight text-slate-900 sm:text-5xl lg:text-7xl">
+            <h1 className={`text-4xl leading-tight font-black tracking-tight text-slate-900 sm:text-5xl lg:text-7xl ${mark("hero")} ${editMode ? "cursor-pointer" : ""}`} {...editProps("hero")}>
               <span className="wipe block">{content.hero.line1}</span>
               <span className="wipe wipe-2 mt-2 block">
                 {content.hero.line2Before}
@@ -448,9 +459,9 @@ export default function ClubHome({
         <section id="about" ref={about.ref} className="scroll-mt-24 px-4 py-16 sm:px-6 lg:px-8">
           <div className={`mx-auto grid max-w-6xl items-center gap-10 rounded-[2.5rem] bg-white p-6 shadow-sm md:grid-cols-2 md:p-12 ${about.shown ? "await-rise inview" : "await-rise"}`}>
             <div>
-              <p className="inline-flex rounded-full bg-purple-100 px-4 py-1.5 text-sm font-bold text-purple-700">{ui.aboutPill}</p>
-              <h2 className="mt-4 text-3xl font-black tracking-tight md:text-4xl">{content.about.title}</h2>
-              <p className="mt-5 max-w-prose leading-relaxed text-slate-600">{content.about.p1}</p>
+              <p className={`inline-flex rounded-full bg-purple-100 px-4 py-1.5 text-sm font-bold text-purple-700 ${mark("about-pill")} ${editMode ? "cursor-pointer" : ""}`} {...editProps("about-pill")}>{ui.aboutPill}</p>
+              <h2 className={`mt-4 text-3xl font-black tracking-tight md:text-4xl ${mark("about-title")} ${editMode ? "cursor-pointer" : ""}`} {...editProps("about-title")}>{content.about.title}</h2>
+              <p className={`mt-5 max-w-prose leading-relaxed text-slate-600 ${mark("about-p1")} ${editMode ? "cursor-pointer" : ""}`} {...editProps("about-p1")}>{content.about.p1}</p>
               <p
                 className={`mt-4 max-w-prose leading-relaxed text-slate-600 ${mark("about")} ${editMode ? "cursor-pointer" : ""}`}
                 onClick={editMode ? () => choose("about") : undefined}
@@ -460,10 +471,20 @@ export default function ClubHome({
             </div>
             <div className="tilt-group relative mx-auto min-h-80 w-full max-w-sm">
               <div className="pad-tilt absolute inset-x-4 top-4 bottom-0 rounded-[2rem] bg-orange-500" />
-              <div data-photo="" className="photo-tilt relative flex min-h-80 items-end overflow-hidden rounded-[2rem] bg-gradient-to-br from-amber-100 via-orange-50 to-slate-200 shadow-lg">
-                <span className="absolute top-16 left-8 h-24 w-16 rotate-6 rounded-lg bg-orange-500 shadow" />
-                <span className="absolute top-24 left-20 h-24 w-16 -rotate-3 rounded-lg bg-indigo-600 shadow" />
-                <span className="absolute top-14 left-32 h-24 w-16 rotate-2 rounded-lg bg-emerald-500 shadow" />
+              <div
+                data-photo=""
+                className={`photo-tilt relative flex min-h-80 items-end overflow-hidden rounded-[2rem] bg-gradient-to-br from-amber-100 via-orange-50 to-slate-200 shadow-lg ${mark("about-photo")} ${editMode ? "cursor-pointer" : ""}`}
+                {...editProps("about-photo")}
+              >
+                {content.about.photoUrl ? (
+                  <img src={content.about.photoUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                ) : (
+                  <>
+                    <span className="absolute top-16 left-8 h-24 w-16 rotate-6 rounded-lg bg-orange-500 shadow" />
+                    <span className="absolute top-24 left-20 h-24 w-16 -rotate-3 rounded-lg bg-indigo-600 shadow" />
+                    <span className="absolute top-14 left-32 h-24 w-16 rotate-2 rounded-lg bg-emerald-500 shadow" />
+                  </>
+                )}
                 <p className="relative m-4 rounded-full bg-white px-3 py-1 text-xs font-bold text-slate-700">{ui.photo}</p>
               </div>
             </div>
@@ -476,18 +497,18 @@ export default function ClubHome({
             <div className="pointer-events-none absolute -right-10 bottom-6 h-56 w-56 rounded-full bg-blue-500/20 blur-3xl" />
             <div className="relative">
               <div className="flex flex-col items-center gap-4 md:block">
-                <p className="inline-flex rounded-full border border-slate-700 bg-slate-800 px-4 py-1.5 text-sm font-bold text-orange-300">{ui.gamesPill}</p>
+                <p className={`inline-flex rounded-full border border-slate-700 bg-slate-800 px-4 py-1.5 text-sm font-bold text-orange-300 ${mark("games-copy")} ${editMode ? "cursor-pointer" : ""}`} {...editProps("games-copy")}>{ui.gamesPill}</p>
                 <button type="button" onClick={() => setLibrary(true)} className="min-h-11 text-sm font-bold text-orange-300 md:absolute md:top-0 md:right-0">
                   {ui.gamesMore}
                 </button>
               </div>
-              <h2 className="mt-6 text-center text-3xl font-black tracking-tight md:text-5xl">
+              <h2 className={`mt-6 text-center text-3xl font-black tracking-tight md:text-5xl ${mark("games-copy")} ${editMode ? "cursor-pointer" : ""}`} {...editProps("games-copy")}>
                 {ui.gamesLead}
                 <span className="bg-gradient-to-r from-orange-500 to-yellow-500 bg-clip-text text-transparent">{ui.gamesMark}</span>
                 {ui.gamesTail}
               </h2>
-              <p className="mx-auto mt-4 max-w-2xl text-center text-slate-300">{ui.gamesSub}</p>
-              <p className="mx-auto mt-2 max-w-2xl text-center text-sm text-slate-400">{ui.gamesNote}</p>
+              <p className={`mx-auto mt-4 max-w-2xl text-center text-slate-300 ${mark("games-copy")} ${editMode ? "cursor-pointer" : ""}`} {...editProps("games-copy")}>{ui.gamesSub}</p>
+              <p className={`mx-auto mt-2 max-w-2xl text-center text-sm text-slate-400 ${mark("games-copy")} ${editMode ? "cursor-pointer" : ""}`} {...editProps("games-copy")}>{ui.gamesNote}</p>
               <div className="mt-8 flex items-center justify-end gap-2">
                 <button type="button" aria-label={ui.shelfPrev} onClick={() => nudgeShelf(-1)} className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-600 bg-slate-800 font-bold text-white">
                   ←
@@ -530,10 +551,10 @@ export default function ClubHome({
           <div className="mx-auto max-w-6xl">
             <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
               <div>
-                <p className="inline-flex rounded-full bg-orange-100 px-4 py-1.5 text-sm font-bold text-orange-600">{ui.newsPill}</p>
-                <h2 className="mt-4 text-3xl font-black tracking-tight md:text-5xl">{ui.newsTitle}</h2>
+                <p className={`inline-flex rounded-full bg-orange-100 px-4 py-1.5 text-sm font-bold text-orange-600 ${mark("news-copy")} ${editMode ? "cursor-pointer" : ""}`} {...editProps("news-copy")}>{ui.newsPill}</p>
+                <h2 className={`mt-4 text-3xl font-black tracking-tight md:text-5xl ${mark("news-copy")} ${editMode ? "cursor-pointer" : ""}`} {...editProps("news-copy")}>{ui.newsTitle}</h2>
               </div>
-              <p className="max-w-xs text-sm text-slate-500 md:text-right">{ui.newsAside}</p>
+              <p className={`max-w-xs text-sm text-slate-500 md:text-right ${mark("news-copy")} ${editMode ? "cursor-pointer" : ""}`} {...editProps("news-copy")}>{ui.newsAside}</p>
             </div>
             <div className="mt-8 inline-flex w-full rounded-full bg-white p-1 shadow-sm sm:w-auto">
               {([
@@ -570,7 +591,7 @@ export default function ClubHome({
             <div className="pointer-events-none absolute -left-8 top-0 h-48 w-48 rounded-full bg-orange-500/40 blur-3xl" />
             <div className="pointer-events-none absolute right-0 bottom-0 h-48 w-48 rounded-full bg-purple-500/40 blur-3xl" />
             <div className="relative">
-              <h2 className="text-3xl font-black tracking-tight md:text-5xl">{ui.joinTitle}</h2>
+              <h2 className={`text-3xl font-black tracking-tight md:text-5xl ${mark("join")} ${editMode ? "cursor-pointer" : ""}`} {...editProps("join")}>{ui.joinTitle}</h2>
               <p
                 className={`mx-auto mt-4 max-w-2xl leading-relaxed text-slate-300 ${mark("join")} ${editMode ? "cursor-pointer" : ""}`}
                 onClick={editMode ? () => choose("join") : undefined}
@@ -602,10 +623,29 @@ export default function ClubHome({
       {library ? (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900 text-white">
           <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
-            <button type="button" onClick={() => setLibrary(false)} className="inline-flex min-h-11 items-center font-bold text-orange-300">
-              {ui.libraryBack}
-            </button>
-            <h2 className="mt-4 text-3xl font-black md:text-5xl">{ui.libraryTitle}</h2>
+            <div className="flex flex-wrap items-center gap-3">
+              <button type="button" onClick={() => setLibrary(false)} className="inline-flex min-h-11 items-center font-bold text-orange-300">
+                {ui.libraryBack}
+              </button>
+              {editMode && onLibraryAdd ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onLibraryAdd();
+                    setLibrary(false);
+                  }}
+                  className="inline-flex min-h-11 items-center rounded-full bg-orange-500 px-4 text-sm font-bold text-white"
+                >
+                  加一盒
+                </button>
+              ) : null}
+            </div>
+            <h2
+              className={`mt-4 text-3xl font-black md:text-5xl ${mark("games-copy")} ${editMode ? "cursor-pointer" : ""}`}
+              {...editProps("games-copy")}
+            >
+              {ui.libraryTitle}
+            </h2>
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
@@ -629,18 +669,31 @@ export default function ClubHome({
             {filtered.length ? (
               <div className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-3">
                 {filtered.map((item, index) => (
-                  <GameCard
+                  <div
                     key={item.id}
-                    game={item}
-                    index={index}
-                    shown
-                    ui={ui}
-                    kindLabel={kindLabel[item.kind]}
-                    kindClass={KIND_CLASS[item.kind]}
-                    onPlay={() => setModal({ type: "ice" })}
-                    onTeach={() => openTeach(item)}
-                    onBorrow={() => openBorrow(item.id)}
-                  />
+                    className={editMode ? "cursor-pointer" : undefined}
+                    onClick={
+                      editMode
+                        ? () => {
+                            choose(`game:${item.id}`);
+                            setLibrary(false);
+                          }
+                        : undefined
+                    }
+                  >
+                    <GameCard
+                      game={item}
+                      index={index}
+                      shown
+                      ui={ui}
+                      kindLabel={kindLabel[item.kind]}
+                      kindClass={KIND_CLASS[item.kind]}
+                      picked={selected === `game:${item.id}`}
+                      onPlay={() => (editMode ? choose(`game:${item.id}`) : setModal({ type: "ice" }))}
+                      onTeach={() => openTeach(item)}
+                      onBorrow={() => (editMode ? choose(`game:${item.id}`) : openBorrow(item.id))}
+                    />
+                  </div>
                 ))}
               </div>
             ) : (
@@ -743,7 +796,11 @@ export default function ClubHome({
                   <button type="button" aria-label={ui.close} onClick={() => setModal(null)} className="absolute top-3 right-3 z-10 inline-flex min-h-11 min-w-11 items-center justify-center rounded-full bg-white/80 text-xl font-bold">
                     ×
                   </button>
-                  <span className="absolute inset-0 grid place-items-center text-6xl" aria-hidden>{activeEvent.emoji}</span>
+                  {activeEvent.coverUrl ? (
+                    <img src={activeEvent.coverUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                  ) : (
+                    <span className="absolute inset-0 grid place-items-center text-6xl" aria-hidden>{activeEvent.emoji}</span>
+                  )}
                   {eventEnded(activeEvent) ? (
                     <div className="absolute inset-x-0 bottom-0 bg-stone-900/75 px-3 py-2 text-center text-sm font-bold text-white">{ui.endedBar}</div>
                   ) : null}
@@ -975,8 +1032,12 @@ function GameCard({
       style={{ ["--i" as string]: index }}
     >
       <div className="relative h-44 overflow-hidden bg-slate-900">
-        <div className="cover-zoom grid h-full place-items-center text-7xl">{game.emoji}</div>
-        <p className="absolute bottom-3 left-4 text-xl font-black text-white">{game.name}</p>
+        {game.coverUrl ? (
+          <img src={game.coverUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
+        ) : (
+          <div className="cover-zoom grid h-full place-items-center text-7xl">{game.emoji}</div>
+        )}
+        <p className="absolute bottom-3 left-4 z-10 text-xl font-black text-white">{game.name}</p>
       </div>
       <div className="p-5">
         <div className="flex flex-wrap gap-2">
@@ -984,15 +1045,16 @@ function GameCard({
           <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${kindClass}`}>{kindLabel}</span>
         </div>
         <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-slate-300">{game.blurb}</p>
-        {game.action === "play" ? (
+        {(game.showPlay ?? game.action === "play") ? (
           <button type="button" onClick={onPlay} className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 font-bold text-white">
             {ui.play}
           </button>
-        ) : (
+        ) : null}
+        {(game.showTeach ?? game.action !== "play") ? (
           <button type="button" onClick={onTeach} className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-slate-700 font-bold text-white">
             {ui.teach}
           </button>
-        )}
+        ) : null}
         {game.borrowable ? (
           <button type="button" onClick={onBorrow} className="mt-2 inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-orange-600 font-bold text-white">
             {ui.borrow}
@@ -1023,11 +1085,11 @@ function EventCard({
   return (
     <article className={`overflow-hidden rounded-[2rem] bg-white shadow-sm ${picked ? "ring-2 ring-orange-500" : ""}`}>
       <div className={`relative h-56 bg-gradient-to-br ${event.tint} ${ended ? "opacity-70" : ""}`}>
-        <p className="absolute top-4 left-4 rounded-xl bg-white/80 px-3 py-2 text-sm font-black text-slate-900 backdrop-blur">{event.badge}</p>
-        {event.placeholder ? <p className="absolute top-4 right-4 rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800">{ui.cardReplace}</p> : null}
-        <span className="absolute inset-0 grid place-items-center text-6xl" aria-hidden>{event.emoji}</span>
+        {event.coverUrl ? <img src={event.coverUrl} alt="" className="absolute inset-0 h-full w-full object-cover" /> : <span className="absolute inset-0 grid place-items-center text-6xl" aria-hidden>{event.emoji}</span>}
+        <p className="absolute top-4 left-4 z-10 rounded-xl bg-white/80 px-3 py-2 text-sm font-black text-slate-900 backdrop-blur">{event.badge}</p>
+        {event.placeholder ? <p className="absolute top-4 right-4 z-10 rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800">{ui.cardReplace}</p> : null}
         {ended ? (
-          <div className="absolute inset-x-0 bottom-0 bg-stone-900/75 px-3 py-2 text-center text-sm font-bold text-white">{ui.endedBar}</div>
+          <div className="absolute inset-x-0 bottom-0 z-10 bg-stone-900/75 px-3 py-2 text-center text-sm font-bold text-white">{ui.endedBar}</div>
         ) : null}
       </div>
       <div className={`p-5 ${ended ? "opacity-80" : ""}`}>

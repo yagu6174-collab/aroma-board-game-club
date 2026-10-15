@@ -17,6 +17,9 @@ export type ClubGame = {
   action: "play" | "teach";
   borrowable: boolean;
   teachUrl?: string;
+  coverUrl?: string;
+  showPlay?: boolean;
+  showTeach?: boolean;
 };
 
 export type ClubLink = {
@@ -45,6 +48,7 @@ export type ClubEvent = {
   emoji: string;
   tint: string;
   placeholder: boolean;
+  coverUrl?: string;
   /** ISO start time for the floating “next event” countdown. */
   startsAt?: string;
   sessions: ClubSession[];
@@ -272,6 +276,7 @@ export const clubContent = {
     title: "馨香桌游社",
     p1: "馨香桌游社，英文写作 Aroma Board Game Club。馨香对应 Aroma，桌游社对应 Board Game Club。",
     p2: aboutDoc.prose,
+    photoUrl: "",
   },
   welcome: homeDoc.claim,
   join: `${aboutDoc.prose}${contactDoc.hint}微信 ${contactDoc.wechat}。邮箱 ${contactDoc.email}。`,
@@ -441,20 +446,40 @@ export const clubContent = {
 
 export type ClubContent = typeof clubContent;
 
+const editableUiKeys = [
+  "aboutPill",
+  "gamesPill",
+  "gamesLead",
+  "gamesMark",
+  "gamesTail",
+  "gamesSub",
+  "gamesNote",
+  "libraryTitle",
+  "newsPill",
+  "newsTitle",
+  "newsAside",
+  "joinTitle",
+] as const;
+
 export function presentClub(content: ClubContent, lang: Lang): ClubContent {
   if (lang !== "en") return content;
+  const seedHero = clubContent.hero;
+  const nextUi = { ...englishUi };
+  for (const key of editableUiKeys) {
+    if (content.ui[key] !== ui[key]) nextUi[key] = content.ui[key];
+  }
   return {
     ...content,
     hero: {
       ...content.hero,
-      line1: "A few tables, a few boxes of games",
-      line2Before: "people who want to ",
-      line2Mark: "enjoy life",
-      line2After: "",
+      line1: content.hero.line1 === seedHero.line1 ? "A few tables, a few boxes of games" : content.hero.line1,
+      line2Before: content.hero.line2Before === seedHero.line2Before ? "people who want to " : content.hero.line2Before,
+      line2Mark: content.hero.line2Mark === seedHero.line2Mark ? "enjoy life" : content.hero.line2Mark,
+      line2After: content.hero.line2After === seedHero.line2After ? "" : content.hero.line2After,
       school: "School or organisation",
       intro: content.hero.intro,
     },
     welcome: content.welcome,
-    ui: englishUi,
+    ui: nextUi,
   };
 }

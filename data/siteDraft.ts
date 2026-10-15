@@ -9,6 +9,9 @@ export type SiteGameDraft = {
   borrowable: boolean;
   emoji: string;
   teachUrl: string;
+  coverUrl: string;
+  showPlay: boolean;
+  showTeach: boolean;
 };
 
 export type SiteSessionDraft = {
@@ -28,7 +31,32 @@ export type SiteEventDraft = {
   time: string;
   startsAt: string;
   emoji: string;
+  coverUrl: string;
   sessions: SiteSessionDraft[];
+};
+
+export type SiteSections = {
+  aboutPill: string;
+  aboutTitle: string;
+  aboutP1: string;
+  gamesPill: string;
+  gamesLead: string;
+  gamesMark: string;
+  gamesTail: string;
+  gamesSub: string;
+  gamesNote: string;
+  libraryTitle: string;
+  newsPill: string;
+  newsTitle: string;
+  newsAside: string;
+  joinTitle: string;
+};
+
+export type SiteHeroLines = {
+  line1: string;
+  line2Before: string;
+  line2Mark: string;
+  line2After: string;
 };
 
 export type SiteLinksDraft = {
@@ -40,10 +68,13 @@ export type SiteLinksDraft = {
 };
 
 export type SiteDraft = {
-  revision: 2;
+  revision: 3;
   claim: string;
   about: string;
   join: string;
+  photoUrl: string;
+  heroLines: SiteHeroLines;
+  sections: SiteSections;
   games: SiteGameDraft[];
   events: SiteEventDraft[];
   links: SiteLinksDraft;
@@ -72,6 +103,10 @@ function groupOf(value: unknown, fallback: "club" | "classmate"): "club" | "clas
   return value === "classmate" || value === "club" ? value : fallback;
 }
 
+function flag(value: unknown, fallback: boolean) {
+  return typeof value === "boolean" ? value : fallback;
+}
+
 function count(value: unknown, fallback: number) {
   const next = typeof value === "number" ? value : Number(value);
   if (!Number.isFinite(next) || next < 0) return fallback;
@@ -96,10 +131,33 @@ function linkOf(value: unknown, fallback: ClubLink): ClubLink {
 
 export function siteDraftFrom(content: ClubContent): SiteDraft {
   return {
-    revision: 2,
+    revision: 3,
     claim: content.hero.intro,
     about: content.about.p2,
     join: content.join,
+    photoUrl: content.about.photoUrl,
+    heroLines: {
+      line1: content.hero.line1,
+      line2Before: content.hero.line2Before,
+      line2Mark: content.hero.line2Mark,
+      line2After: content.hero.line2After,
+    },
+    sections: {
+      aboutPill: content.ui.aboutPill,
+      aboutTitle: content.about.title,
+      aboutP1: content.about.p1,
+      gamesPill: content.ui.gamesPill,
+      gamesLead: content.ui.gamesLead,
+      gamesMark: content.ui.gamesMark,
+      gamesTail: content.ui.gamesTail,
+      gamesSub: content.ui.gamesSub,
+      gamesNote: content.ui.gamesNote,
+      libraryTitle: content.ui.libraryTitle,
+      newsPill: content.ui.newsPill,
+      newsTitle: content.ui.newsTitle,
+      newsAside: content.ui.newsAside,
+      joinTitle: content.ui.joinTitle,
+    },
     games: content.games.map((game) => ({
       id: game.id,
       name: game.name,
@@ -109,6 +167,9 @@ export function siteDraftFrom(content: ClubContent): SiteDraft {
       borrowable: game.borrowable,
       emoji: game.emoji,
       teachUrl: game.teachUrl ?? "",
+      coverUrl: game.coverUrl ?? "",
+      showPlay: game.showPlay ?? game.action === "play",
+      showTeach: game.showTeach ?? game.action !== "play",
     })),
     events: content.events.map((event) => ({
       id: event.id,
@@ -121,6 +182,7 @@ export function siteDraftFrom(content: ClubContent): SiteDraft {
       time: event.time,
       startsAt: event.startsAt ?? "",
       emoji: event.emoji,
+      coverUrl: event.coverUrl ?? "",
       sessions: event.sessions.map((session) => ({
         name: session.name,
         signed: session.signed,
@@ -147,9 +209,12 @@ export function applySiteDraft(base: ClubContent, draft: SiteDraft): ClubContent
       kind: next.kind,
       blurb: next.blurb,
       emoji: next.emoji || seed?.emoji || "🎲",
-      action: seed?.action ?? "teach",
+      action: (next.showPlay && !next.showTeach ? "play" : "teach") as "play" | "teach",
       borrowable: next.borrowable,
       teachUrl: next.teachUrl,
+      coverUrl: next.coverUrl,
+      showPlay: next.showPlay,
+      showTeach: next.showTeach,
     };
   });
   const events = draft.events.map((next, index) => {
@@ -166,6 +231,7 @@ export function applySiteDraft(base: ClubContent, draft: SiteDraft): ClubContent
       time: next.time,
       place: next.place,
       emoji: next.emoji || seed?.emoji || "🎲",
+      coverUrl: next.coverUrl,
       tint: seed?.tint ?? TINTS[index % TINTS.length]!,
       placeholder: false,
       startsAt: next.startsAt || undefined,
@@ -189,10 +255,25 @@ export function applySiteDraft(base: ClubContent, draft: SiteDraft): ClubContent
       instagram: { ...draft.links.instagram },
       form: { ...draft.links.form },
     },
-    hero: { ...base.hero, intro: draft.claim },
+    hero: { ...base.hero, ...draft.heroLines, intro: draft.claim },
     welcome: draft.claim,
-    about: { ...base.about, p2: draft.about },
+    about: { ...base.about, title: draft.sections.aboutTitle, p1: draft.sections.aboutP1, p2: draft.about, photoUrl: draft.photoUrl },
     join: draft.join,
+    ui: {
+      ...base.ui,
+      aboutPill: draft.sections.aboutPill,
+      gamesPill: draft.sections.gamesPill,
+      gamesLead: draft.sections.gamesLead,
+      gamesMark: draft.sections.gamesMark,
+      gamesTail: draft.sections.gamesTail,
+      gamesSub: draft.sections.gamesSub,
+      gamesNote: draft.sections.gamesNote,
+      libraryTitle: draft.sections.libraryTitle,
+      newsPill: draft.sections.newsPill,
+      newsTitle: draft.sections.newsTitle,
+      newsAside: draft.sections.newsAside,
+      joinTitle: draft.sections.joinTitle,
+    },
     games,
     events,
   };
@@ -206,11 +287,36 @@ export function normalizeSiteDraft(input: unknown, base: ClubContent): SiteDraft
   const contact = asRecord(raw.contact);
   const linksRaw = asRecord(raw.links);
 
+  const sectionsRaw = asRecord(raw.sections);
+  const heroRaw = asRecord(raw.heroLines);
   return {
-    revision: 2,
+    revision: 3,
     claim: text(raw.claim, seed.claim),
     about: text(raw.about, seed.about),
     join: text(raw.join, seed.join),
+    photoUrl: text(raw.photoUrl, seed.photoUrl),
+    heroLines: {
+      line1: text(heroRaw.line1, seed.heroLines.line1),
+      line2Before: text(heroRaw.line2Before, seed.heroLines.line2Before),
+      line2Mark: text(heroRaw.line2Mark, seed.heroLines.line2Mark),
+      line2After: text(heroRaw.line2After, seed.heroLines.line2After),
+    },
+    sections: {
+      aboutPill: text(sectionsRaw.aboutPill, seed.sections.aboutPill),
+      aboutTitle: text(sectionsRaw.aboutTitle, seed.sections.aboutTitle),
+      aboutP1: text(sectionsRaw.aboutP1, seed.sections.aboutP1),
+      gamesPill: text(sectionsRaw.gamesPill, seed.sections.gamesPill),
+      gamesLead: text(sectionsRaw.gamesLead, seed.sections.gamesLead),
+      gamesMark: text(sectionsRaw.gamesMark, seed.sections.gamesMark),
+      gamesTail: text(sectionsRaw.gamesTail, seed.sections.gamesTail),
+      gamesSub: text(sectionsRaw.gamesSub, seed.sections.gamesSub),
+      gamesNote: text(sectionsRaw.gamesNote, seed.sections.gamesNote),
+      libraryTitle: text(sectionsRaw.libraryTitle, seed.sections.libraryTitle),
+      newsPill: text(sectionsRaw.newsPill, seed.sections.newsPill),
+      newsTitle: text(sectionsRaw.newsTitle, seed.sections.newsTitle),
+      newsAside: text(sectionsRaw.newsAside, seed.sections.newsAside),
+      joinTitle: text(sectionsRaw.joinTitle, seed.sections.joinTitle),
+    },
     games: gameRows ? normalizeGames(gameRows, seed.games) : seed.games,
     events: eventRows ? normalizeEvents(eventRows, seed.events) : seed.events,
     links: normalizeLinks(linksRaw, contact, seed.links),
@@ -235,6 +341,9 @@ function normalizeGames(rows: unknown[], seed: SiteGameDraft[]) {
       borrowable: typeof raw.borrowable === "boolean" ? raw.borrowable : (known?.borrowable ?? false),
       emoji: text(raw.emoji, known?.emoji ?? "🎲"),
       teachUrl: text(raw.teachUrl, known?.teachUrl ?? ""),
+      coverUrl: text(raw.coverUrl, known?.coverUrl ?? ""),
+      showPlay: flag(raw.showPlay, known?.showPlay ?? false),
+      showTeach: flag(raw.showTeach, known?.showTeach ?? true),
     });
   }
   return games;
@@ -261,6 +370,7 @@ function normalizeEvents(rows: unknown[], seed: SiteEventDraft[]) {
       time: text(raw.time, known?.time ?? ""),
       startsAt: text(raw.startsAt, known?.startsAt ?? ""),
       emoji: text(raw.emoji, known?.emoji ?? "🎲"),
+      coverUrl: text(raw.coverUrl, known?.coverUrl ?? ""),
       sessions: sessionRows ? normalizeSessions(sessionRows) : (known?.sessions ?? []),
     });
   }
