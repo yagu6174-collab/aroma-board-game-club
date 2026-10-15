@@ -32,6 +32,7 @@ export type SiteEventDraft = {
   startsAt: string;
   emoji: string;
   coverUrl: string;
+  signupUrl: string;
   sessions: SiteSessionDraft[];
 };
 
@@ -183,6 +184,7 @@ export function siteDraftFrom(content: ClubContent): SiteDraft {
       startsAt: event.startsAt ?? "",
       emoji: event.emoji,
       coverUrl: event.coverUrl ?? "",
+      signupUrl: event.signupUrl ?? "",
       sessions: event.sessions.map((session) => ({
         name: session.name,
         signed: session.signed,
@@ -232,6 +234,7 @@ export function applySiteDraft(base: ClubContent, draft: SiteDraft): ClubContent
       place: next.place,
       emoji: next.emoji || seed?.emoji || "🎲",
       coverUrl: next.coverUrl,
+      signupUrl: next.signupUrl,
       tint: seed?.tint ?? TINTS[index % TINTS.length]!,
       placeholder: false,
       startsAt: next.startsAt || undefined,
@@ -371,6 +374,7 @@ function normalizeEvents(rows: unknown[], seed: SiteEventDraft[]) {
       startsAt: text(raw.startsAt, known?.startsAt ?? ""),
       emoji: text(raw.emoji, known?.emoji ?? "🎲"),
       coverUrl: text(raw.coverUrl, known?.coverUrl ?? ""),
+      signupUrl: text(raw.signupUrl, known?.signupUrl ?? ""),
       sessions: sessionRows ? normalizeSessions(sessionRows) : (known?.sessions ?? []),
     });
   }

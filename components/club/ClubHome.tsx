@@ -817,7 +817,15 @@ export default function ClubHome({
                   <Sessions event={activeEvent} ui={ui} ended={eventEnded(activeEvent)} />
                   <p className="mt-5 whitespace-pre-line leading-relaxed text-slate-700">{activeEvent.body}</p>
                   {eventEnded(activeEvent) ? null : (
-                    <button type="button" onClick={goSignup} className="mt-6 inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-indigo-600 font-bold text-white">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const href = activeEvent.signupUrl?.trim();
+                        if (!href || editMode) return;
+                        window.location.assign(href);
+                      }}
+                      className="mt-6 inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-indigo-600 font-bold text-white"
+                    >
                       {ui.signup}
                     </button>
                   )}

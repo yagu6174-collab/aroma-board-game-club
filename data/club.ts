@@ -49,6 +49,8 @@ export type ClubEvent = {
   tint: string;
   placeholder: boolean;
   coverUrl?: string;
+  /** Link used only by the sign-up button inside this event’s detail. */
+  signupUrl?: string;
   /** ISO start time for the floating “next event” countdown. */
   startsAt?: string;
   sessions: ClubSession[];

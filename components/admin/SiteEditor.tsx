@@ -347,6 +347,7 @@ function insertEvent(onChange: (next: SiteDraft | ((current: SiteDraft) => SiteD
         startsAt: "",
         emoji: "🎲",
         coverUrl: "",
+        signupUrl: "",
         sessions: [{ name: "场次", signed: 0, capacity: 8 }],
       },
     ],
@@ -431,6 +432,9 @@ function EventFields({ event, onChange }: { event: SiteEventDraft; onChange: (ne
       </Field>
       <Field label="地点">
         <input value={event.place} onChange={(input) => onChange({ ...event, place: input.target.value })} className={fieldClass} />
+      </Field>
+      <Field label="报名链接">
+        <input value={event.signupUrl} onChange={(input) => onChange({ ...event, signupUrl: input.target.value })} placeholder="只用于这场详细资料里的立即报名" className={fieldClass} />
       </Field>
       <Field label="摘要">
         <textarea rows={3} value={event.summary} onChange={(input) => onChange({ ...event, summary: input.target.value })} className={fieldClass} />
