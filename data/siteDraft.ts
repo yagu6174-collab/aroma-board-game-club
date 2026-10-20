@@ -1,4 +1,5 @@
 import type { ClubContent, ClubLink, GameKind } from "@/data/club";
+import { cssColor } from "@/lib/color";
 
 export type SiteGameDraft = {
   id: string;
@@ -60,6 +61,23 @@ export type SiteHeroLines = {
   line2After: string;
 };
 
+export type SiteHeroCopy = {
+  school: string;
+  replaceTag: string;
+  langLine: string;
+  signup: string;
+  signupEvent: string;
+  learnMore: string;
+};
+
+export type SiteColors = {
+  text: string;
+  accent: string;
+  accentEnd: string;
+  body: string;
+  meta: string;
+};
+
 export type SiteLinksDraft = {
   email: ClubLink;
   wechat: ClubLink;
@@ -69,7 +87,7 @@ export type SiteLinksDraft = {
 };
 
 export type SiteDraft = {
-  revision: 3;
+  revision: 4;
   claim: string;
   about: string;
   join: string;
@@ -78,6 +96,8 @@ export type SiteDraft = {
   enName: string;
   logoUrl: string;
   heroLines: SiteHeroLines;
+  heroCopy: SiteHeroCopy;
+  colors: SiteColors;
   sections: SiteSections;
   games: SiteGameDraft[];
   events: SiteEventDraft[];
@@ -135,7 +155,7 @@ function linkOf(value: unknown, fallback: ClubLink): ClubLink {
 
 export function siteDraftFrom(content: ClubContent): SiteDraft {
   return {
-    revision: 3,
+    revision: 4,
     claim: content.hero.intro,
     about: content.about.p2,
     join: content.join,
@@ -149,6 +169,15 @@ export function siteDraftFrom(content: ClubContent): SiteDraft {
       line2Mark: content.hero.line2Mark,
       line2After: content.hero.line2After,
     },
+    heroCopy: {
+      school: content.hero.school,
+      replaceTag: content.ui.replace,
+      langLine: content.ui.langLine,
+      signup: content.ui.signup,
+      signupEvent: content.ui.signupEvent,
+      learnMore: content.ui.learnMore,
+    },
+    colors: { ...content.colors },
     sections: {
       aboutPill: content.ui.aboutPill,
       aboutTitle: content.about.title,
@@ -267,7 +296,8 @@ export function applySiteDraft(base: ClubContent, draft: SiteDraft): ClubContent
     name: draft.name,
     enName: draft.enName,
     logoUrl: draft.logoUrl,
-    hero: { ...base.hero, ...draft.heroLines, intro: draft.claim },
+    colors: { ...draft.colors },
+    hero: { ...base.hero, ...draft.heroLines, school: draft.heroCopy.school, intro: draft.claim },
     welcome: draft.claim,
     about: { ...base.about, title: draft.sections.aboutTitle, p1: draft.sections.aboutP1, p2: draft.about, photoUrl: draft.photoUrl },
     join: draft.join,
@@ -285,6 +315,11 @@ export function applySiteDraft(base: ClubContent, draft: SiteDraft): ClubContent
       newsTitle: draft.sections.newsTitle,
       newsAside: draft.sections.newsAside,
       joinTitle: draft.sections.joinTitle,
+      replace: draft.heroCopy.replaceTag,
+      langLine: draft.heroCopy.langLine,
+      signup: draft.heroCopy.signup,
+      signupEvent: draft.heroCopy.signupEvent,
+      learnMore: draft.heroCopy.learnMore,
     },
     games,
     events,
@@ -301,8 +336,10 @@ export function normalizeSiteDraft(input: unknown, base: ClubContent): SiteDraft
 
   const sectionsRaw = asRecord(raw.sections);
   const heroRaw = asRecord(raw.heroLines);
+  const heroCopyRaw = asRecord(raw.heroCopy);
+  const colorsRaw = asRecord(raw.colors);
   return {
-    revision: 3,
+    revision: 4,
     claim: text(raw.claim, seed.claim),
     about: text(raw.about, seed.about),
     join: text(raw.join, seed.join),
@@ -315,6 +352,21 @@ export function normalizeSiteDraft(input: unknown, base: ClubContent): SiteDraft
       line2Before: text(heroRaw.line2Before, seed.heroLines.line2Before),
       line2Mark: text(heroRaw.line2Mark, seed.heroLines.line2Mark),
       line2After: text(heroRaw.line2After, seed.heroLines.line2After),
+    },
+    heroCopy: {
+      school: text(heroCopyRaw.school, seed.heroCopy.school),
+      replaceTag: text(heroCopyRaw.replaceTag, seed.heroCopy.replaceTag),
+      langLine: text(heroCopyRaw.langLine, seed.heroCopy.langLine),
+      signup: text(heroCopyRaw.signup, seed.heroCopy.signup),
+      signupEvent: text(heroCopyRaw.signupEvent, seed.heroCopy.signupEvent),
+      learnMore: text(heroCopyRaw.learnMore, seed.heroCopy.learnMore),
+    },
+    colors: {
+      text: cssColor(colorsRaw.text, seed.colors.text),
+      accent: cssColor(colorsRaw.accent, seed.colors.accent),
+      accentEnd: cssColor(colorsRaw.accentEnd, seed.colors.accentEnd),
+      body: cssColor(colorsRaw.body, seed.colors.body),
+      meta: cssColor(colorsRaw.meta, seed.colors.meta),
     },
     sections: {
       aboutPill: text(sectionsRaw.aboutPill, seed.sections.aboutPill),

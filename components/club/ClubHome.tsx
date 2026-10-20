@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useId, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type CSSProperties, type FormEvent, type ReactNode } from "react";
 import DiceCursor from "@/components/club/DiceCursor";
 import HeroDots from "@/components/club/HeroDots";
 import type { ClubContent, ClubEvent, ClubGame, GameKind } from "@/data/club";
+import { cssColor, fallbackColors } from "@/lib/color";
 import type { Lang } from "@/lib/types";
 
 function LocalLabLink() {
@@ -99,6 +100,7 @@ export default function ClubHome({
   onLibraryAdd?: () => void;
 }) {
   const ui = content.ui;
+  const paint = heroPaint(content);
   const pathname = usePathname();
   const [menu, setMenu] = useState(false);
   const [splash, setSplash] = useState<"show" | "out" | "off">(editMode ? "off" : "show");
@@ -357,7 +359,7 @@ export default function ClubHome({
             <Mark className="h-9 w-9 rounded-xl" logoUrl={content.logoUrl} />
             <span className="leading-tight">
               <span className="block text-sm font-black">{content.name}</span>
-              <span className="hidden text-xs font-normal text-orange-500 sm:block">{content.enName}</span>
+              <span className="hidden text-xs font-normal sm:block" style={{ color: paint.accent }}>{content.enName}</span>
             </span>
           </a>
           <RoundIcon href={content.links.instagram.href} label={content.links.instagram.text || "Instagram"}>
@@ -386,7 +388,7 @@ export default function ClubHome({
                 </Link>
               ))}
             </div>
-            <button type="button" onClick={goSignup} className="hidden min-h-11 items-center rounded-full bg-indigo-600 px-4 text-sm font-bold text-white sm:inline-flex">
+            <button type="button" onClick={() => (editMode ? choose("cta") : goSignup())} className="hidden min-h-11 items-center rounded-full bg-indigo-600 px-4 text-sm font-bold text-white sm:inline-flex">
               {ui.signup}
             </button>
             <button
@@ -407,7 +409,7 @@ export default function ClubHome({
                 {label}
               </a>
             ))}
-            <button type="button" onClick={goSignup} className="mt-2 flex min-h-11 w-full items-center justify-center rounded-full bg-indigo-600 font-bold text-white">
+            <button type="button" onClick={() => (editMode ? choose("cta") : goSignup())} className="mt-2 flex min-h-11 w-full items-center justify-center rounded-full bg-indigo-600 font-bold text-white">
               {ui.signup}
             </button>
             <div className="mt-2 flex gap-3 md:hidden">
@@ -425,31 +427,38 @@ export default function ClubHome({
         <section id="top" className="relative flex min-h-[65vh] items-center overflow-hidden md:min-h-[85vh]">
           <HeroDots />
           <div className="relative z-10 mx-auto w-full max-w-6xl px-4 py-16 text-center sm:px-6 lg:px-8">
-            <h1 className={`text-4xl leading-tight font-black tracking-tight text-slate-900 sm:text-5xl lg:text-7xl ${mark("hero")} ${editMode ? "cursor-pointer" : ""}`} {...editProps("hero")}>
+            <h1
+              className={`text-4xl leading-tight font-black tracking-tight sm:text-5xl lg:text-7xl ${mark("hero")} ${editMode ? "cursor-pointer" : ""}`}
+              style={{ color: paint.text }}
+              {...editProps("hero")}
+            >
               <span className="wipe block">{content.hero.line1}</span>
               <span className="wipe wipe-2 mt-2 block">
                 {content.hero.line2Before}
-                <span className="bg-gradient-to-r from-orange-500 to-yellow-500 bg-clip-text text-transparent">{content.hero.line2Mark}</span>
+                <span style={accentStyle(paint.accent, paint.accentEnd)}>{content.hero.line2Mark}</span>
                 {content.hero.line2After}
               </span>
             </h1>
-            <p className="rise-late mt-6 text-sm font-medium text-slate-500">
-              {content.hero.school} <span className="rounded-md bg-amber-100 px-1.5 py-0.5 text-xs font-bold text-amber-800">{ui.replace}</span>
-            </p>
-            <p className="rise-late mt-2 text-lg font-black">{content.name}</p>
-            <p className="rise-late text-sm font-normal text-orange-500">{content.enName}</p>
-            <p className="rise-late mt-2 text-sm text-slate-500">{ui.langLine}</p>
+            <div className={`rise-late ${mark("org")} ${editMode ? "cursor-pointer" : ""}`} {...editProps("org")}>
+              <p className="mt-6 text-sm font-medium" style={{ color: paint.meta }}>
+                {content.hero.school} <ReplaceTag label={ui.replace} />
+              </p>
+              <p className="mt-2 text-lg font-black" style={{ color: paint.text }}>{content.name}</p>
+              <p className="text-sm font-normal" style={{ color: paint.accent }}>{content.enName}</p>
+              <p className="mt-2 text-sm" style={{ color: paint.meta }}>{ui.langLine}</p>
+            </div>
             <p
-              className={`rise-late mx-auto mt-5 max-w-2xl text-base font-normal leading-relaxed text-slate-600 ${mark("claim")} ${editMode ? "cursor-pointer" : ""}`}
+              className={`rise-late mx-auto mt-5 max-w-2xl text-base font-normal leading-relaxed ${mark("claim")} ${editMode ? "cursor-pointer" : ""}`}
+              style={{ color: paint.body }}
               onClick={editMode ? () => choose("claim") : undefined}
             >
               {content.hero.intro}
             </p>
-            <div className="rise-late mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
-              <button type="button" onClick={goSignup} className="inline-flex min-h-11 items-center justify-center rounded-xl bg-indigo-600 px-6 font-bold text-white">
+            <div className={`rise-late mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center ${mark("cta")} ${editMode ? "cursor-pointer" : ""}`} {...editProps("cta")}>
+              <button type="button" onClick={goSignup} className={`inline-flex min-h-11 items-center justify-center rounded-xl bg-indigo-600 px-6 font-bold text-white ${editMode ? "pointer-events-none" : ""}`}>
                 {ui.signupEvent}
               </button>
-              <a href="#about" className="inline-flex min-h-11 items-center justify-center rounded-xl border-2 border-slate-300 bg-white px-6 font-bold text-slate-800">
+              <a href="#about" className={`inline-flex min-h-11 items-center justify-center rounded-xl border-2 border-slate-300 bg-white px-6 font-bold text-slate-800 ${editMode ? "pointer-events-none" : ""}`}>
                 {ui.learnMore}
               </a>
             </div>
@@ -812,7 +821,7 @@ export default function ClubHome({
                   <p className="mt-3 text-sm text-slate-600"><span className="font-bold text-slate-900">{ui.time}</span> {activeEvent.time}</p>
                   <p className="mt-1 text-sm text-slate-600">
                     <span className="font-bold text-slate-900">{ui.fee}</span> {activeEvent.fee}
-                    {activeEvent.feePlaceholder ? <span className="ml-2 rounded-md bg-amber-100 px-1.5 py-0.5 text-xs font-bold text-amber-800">{ui.replace}</span> : null}
+                    {activeEvent.feePlaceholder ? <ReplaceTag label={ui.replace} className="ml-2" /> : null}
                   </p>
                   <p className="mt-1 text-sm text-slate-600"><span className="font-bold text-slate-900">{ui.place}</span> {activeEvent.place}</p>
                   <Sessions event={activeEvent} ui={ui} ended={eventEnded(activeEvent)} />
@@ -841,6 +850,31 @@ export default function ClubHome({
 }
 
 const fieldClass = "min-h-11 w-full rounded-xl border border-slate-300 px-3";
+
+function heroPaint(content: ClubContent) {
+  return {
+    text: cssColor(content.colors.text, fallbackColors.text),
+    accent: cssColor(content.colors.accent, fallbackColors.accent),
+    accentEnd: cssColor(content.colors.accentEnd, fallbackColors.accentEnd),
+    body: cssColor(content.colors.body, fallbackColors.body),
+    meta: cssColor(content.colors.meta, fallbackColors.meta),
+  };
+}
+
+function accentStyle(accent: string, accentEnd: string): CSSProperties {
+  return {
+    backgroundImage: `linear-gradient(to right, ${accent}, ${accentEnd})`,
+    WebkitBackgroundClip: "text",
+    backgroundClip: "text",
+    color: "transparent",
+    WebkitTextFillColor: "transparent",
+  };
+}
+
+function ReplaceTag({ label, className = "" }: { label: string; className?: string }) {
+  if (!label.trim()) return null;
+  return <span className={`rounded-md bg-amber-100 px-1.5 py-0.5 text-xs font-bold text-amber-800 ${className}`}>{label}</span>;
+}
 
 function Field({ label, required, hint, children }: { label: string; required?: boolean; hint?: string; children: ReactNode }) {
   return (
@@ -1117,7 +1151,7 @@ function EventCard({
         <h3 className="text-xl font-black transition-colors duration-[240ms] ease-[cubic-bezier(.2,0,0,1)] hover:text-orange-500">{event.title}</h3>
         <p className="mt-2 text-sm font-bold text-orange-600">
           {event.fee}
-          {event.feePlaceholder ? <span className="ml-2 rounded-md bg-amber-100 px-1.5 py-0.5 text-xs text-amber-800">{ui.replace}</span> : null}
+          {event.feePlaceholder ? <ReplaceTag label={ui.replace} className="ml-2" /> : null}
         </p>
         <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-slate-600">{event.summary}</p>
         <Sessions event={event} ui={ui} ended={ended} />
