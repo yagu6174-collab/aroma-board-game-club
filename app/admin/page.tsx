@@ -3,6 +3,7 @@ import LoginForm from "@/components/LoginForm";
 import SiteEditor from "@/components/admin/SiteEditor";
 import { isAuthed } from "@/lib/auth";
 import { readSiteDraft } from "@/lib/site";
+import { readVisitStats } from "@/lib/visits";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +14,6 @@ export const metadata: Metadata = {
 
 export default async function AdminHome() {
   if (!(await isAuthed())) return <LoginForm />;
-  const draft = await readSiteDraft();
-  return <SiteEditor initial={draft} />;
+  const [draft, visits] = await Promise.all([readSiteDraft(), readVisitStats()]);
+  return <SiteEditor initial={draft} visits={visits} />;
 }
