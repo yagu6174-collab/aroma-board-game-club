@@ -1,6 +1,7 @@
 import type { ClubContent, ClubLink, GameKind } from "@/data/club";
 import { chromeKeys, type ChromeKey } from "@/data/uiChrome";
 import { cssColor } from "@/lib/color";
+import { canonicalFormId } from "@/lib/formSync";
 
 export type SiteGameDraft = {
   id: string;
@@ -35,6 +36,7 @@ export type SiteEventDraft = {
   emoji: string;
   coverUrl: string;
   signupUrl: string;
+  formId: string;
   sessions: SiteSessionDraft[];
 };
 
@@ -248,6 +250,7 @@ export function siteDraftFrom(content: ClubContent): SiteDraft {
       emoji: event.emoji,
       coverUrl: event.coverUrl ?? "",
       signupUrl: event.signupUrl ?? "",
+      formId: "",
       sessions: event.sessions.map((session) => ({
         name: session.name,
         signed: session.signed,
@@ -476,6 +479,7 @@ function normalizeEvents(rows: unknown[], seed: SiteEventDraft[]) {
       emoji: text(raw.emoji, known?.emoji ?? "🎲"),
       coverUrl: text(raw.coverUrl, known?.coverUrl ?? ""),
       signupUrl: text(raw.signupUrl, known?.signupUrl ?? ""),
+      formId: canonicalFormId(text(raw.formId, known?.formId ?? "")),
       sessions: sessionRows ? normalizeSessions(sessionRows) : (known?.sessions ?? []),
     });
   }
