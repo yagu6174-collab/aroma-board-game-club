@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
+import { adminReturnUrl } from "@/lib/formSync";
 import { isAuthed } from "@/lib/auth";
 import { exchangeGoogleCode, forgetOAuthState, googleConfigured, oauthStateMatches } from "@/lib/google";
 
 export const dynamic = "force-dynamic";
 
 function finish(request: Request, code: string) {
-  return forgetOAuthState(NextResponse.redirect(new URL(`/admin?google=${code}`, request.url)));
+  return forgetOAuthState(NextResponse.redirect(adminReturnUrl(request, code)));
 }
 
 export async function GET(request: Request) {

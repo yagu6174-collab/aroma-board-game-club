@@ -15,6 +15,25 @@ export function googleRedirectUri(envValue = process.env.GOOGLE_REDIRECT_URI) {
   return trimmed || DEFAULT_GOOGLE_REDIRECT_URI;
 }
 
+// Next's request.url can report localhost while the browser is on 127.0.0.1.
+// A redirect that changes host drops the host-only admin cookie.
+export function requestOrigin(request: { url: string; headers: { get(name: string): string | null } }) {
+  const forwardedHost = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim() ?? "";
+  const hostHeader = request.headers.get("host")?.split(",")[0]?.trim() ?? "";
+  const host = forwardedHost || hostHeader;
+  const fallback = new URL(request.url).origin;
+  if (!/^[A-Za-z0-9.-]+(?::\d+)?$/.test(host)) return fallback;
+  const forwardedProto = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim() ?? "";
+  const proto = forwardedProto === "http" || forwardedProto === "https" ? forwardedProto : new URL(request.url).protocol.replace(":", "");
+  return `${proto}://${host}`;
+}
+
+export function adminReturnUrl(request: { url: string; headers: { get(name: string): string | null } }, code?: string) {
+  const url = new URL("/admin", requestOrigin(request));
+  if (code) url.searchParams.set("google", code);
+  return url;
+}
+
 export function googleConsentUrl(input: { clientId: string; redirectUri: string; state: string }) {
   const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
   url.searchParams.set("client_id", input.clientId);

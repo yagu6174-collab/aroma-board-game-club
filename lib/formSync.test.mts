@@ -4,6 +4,7 @@ import {
   DEFAULT_GOOGLE_REDIRECT_URI,
   applyResponseCount,
   canonicalFormId,
+  adminReturnUrl,
   googleConsentUrl,
   googleRedirectUri,
   grantedScopesAcceptable,
@@ -90,6 +91,26 @@ test("consent asks only for the readonly Forms scopes", () => {
   assert.equal(googleRedirectUri(" https://example.com/api/google/callback "), "https://example.com/api/google/callback");
 });
 
+test("admin redirects stay on the browser host", () => {
+  const request = {
+    url: "http://localhost:3000/api/google/start",
+    headers: { get: (name: string) => (name === "host" ? "127.0.0.1:3000" : null) },
+  };
+  assert.equal(adminReturnUrl(request, "config").href, "http://127.0.0.1:3000/admin?google=config");
+  const forwarded = {
+    url: "http://localhost:3000/api/google/callback",
+    headers: {
+      get: (name: string) => {
+        if (name === "x-forwarded-host") return "aroma-board-game-club.vercel.app";
+        if (name === "x-forwarded-proto") return "https";
+        if (name === "host") return "internal.local";
+        return null;
+      },
+    },
+  };
+  assert.equal(adminReturnUrl(forwarded, "connected").href, "https://aroma-board-game-club.vercel.app/admin?google=connected");
+});
+
 test("a sealed refresh token round-trips and is not stored in plaintext", () => {
   const token = "1//refresh-token-value-should-not-leak";
   const secret = "local-test-secret";
@@ -99,6 +120,7 @@ test("a sealed refresh token round-trips and is not stored in plaintext", () => 
   assert.equal("refreshToken" in sealed, false);
   assert.equal(openRefreshToken(sealed, secret), token);
   assert.equal(openRefreshToken(sealed, "other-secret"), null);
-  assert.equal(openRefreshToken({ ...sealed, ciphertext: `${sealed.ciphertext.slice(0, -1)}x` }, secret), null);
+  const flipped = `${sealed.ciphertext[0] === "A" ? "B" : "A"}${sealed.ciphertext.slice(1)}`;
+  assert.equal(openRefreshToken({ ...sealed, ciphertext: flipped }, secret), null);
   assert.equal(openRefreshToken({ v: 0 }, secret), null);
 });
