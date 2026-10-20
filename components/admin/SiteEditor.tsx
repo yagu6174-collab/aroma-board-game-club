@@ -139,6 +139,7 @@ function EditorForm({
   if (selected === "claim") {
     return (
       <FormShell title="首屏介绍">
+        <HeroNav selected="claim" onSelect={onSelect} />
         <Field label="介绍">
           <textarea rows={6} value={draft.claim} onChange={(input) => onChange({ ...draft, claim: input.target.value })} className={fieldClass} />
         </Field>
@@ -166,6 +167,7 @@ function EditorForm({
   if (selected === "hero") {
     return (
       <FormShell title="主标题">
+        <HeroNav selected="hero" onSelect={onSelect} />
         <Field label="第一行">
           <input value={draft.heroLines.line1} onChange={(input) => onChange({ ...draft, heroLines: { ...draft.heroLines, line1: input.target.value } })} className={fieldClass} />
         </Field>
@@ -187,6 +189,7 @@ function EditorForm({
   if (selected === "org") {
     return (
       <FormShell title="学校和名称">
+        <HeroNav selected="org" onSelect={onSelect} />
         <Field label="所属学校或组织">
           <input value={draft.heroCopy.school} onChange={(input) => onChange(patchHeroCopy(draft, { school: input.target.value }))} className={fieldClass} />
         </Field>
@@ -211,6 +214,7 @@ function EditorForm({
   if (selected === "cta") {
     return (
       <FormShell title="报名按钮">
+        <HeroNav selected="cta" onSelect={onSelect} />
         <Field label="主按钮">
           <input value={draft.heroCopy.signupEvent} onChange={(input) => onChange(patchHeroCopy(draft, { signupEvent: input.target.value }))} className={fieldClass} />
         </Field>
@@ -624,6 +628,29 @@ function LinkFields({
         </fieldset>
       ))}
     </>
+  );
+}
+
+function HeroNav({ selected, onSelect }: { selected: string; onSelect: (id: string) => void }) {
+  const items = [
+    ["hero", "主标题"],
+    ["org", "学校和名称"],
+    ["claim", "介绍"],
+    ["cta", "按钮"],
+  ] as const;
+  return (
+    <div className="mt-3 flex flex-wrap gap-2">
+      {items.map(([id, label]) => (
+        <button
+          key={id}
+          type="button"
+          onClick={() => onSelect(id)}
+          className={`rounded-full px-3 py-1 text-xs font-bold ${selected === id ? "bg-stone-900 text-white" : "border border-stone-300"}`}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
   );
 }
 

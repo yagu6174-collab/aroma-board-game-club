@@ -254,6 +254,7 @@ export default function ClubHome({
   }
 
   const showNext =
+    !editMode &&
     Boolean(nextEvent) &&
     !nextHidden &&
     splash === "off" &&
