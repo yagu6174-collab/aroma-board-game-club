@@ -254,9 +254,8 @@ export default function ClubHome({
   }
 
   const showNext =
-    !editMode &&
     Boolean(nextEvent) &&
-    !nextHidden &&
+    (editMode || !nextHidden) &&
     splash === "off" &&
     !welcome &&
     !library &&
@@ -338,8 +337,11 @@ export default function ClubHome({
         <NextEventDock
           event={nextEvent}
           ui={ui}
-          onOpen={() => (editMode ? choose(`event:${nextEvent.id}`) : setModal({ type: "event", id: nextEvent.id }))}
-          onDismiss={dismissNext}
+          accent={paint.accent}
+          placed={editMode ? "preview" : "screen"}
+          editing={editMode}
+          onOpen={() => (editMode ? choose("next") : setModal({ type: "event", id: nextEvent.id }))}
+          onDismiss={editMode ? () => choose("next") : dismissNext}
         />
       ) : null}
       {splash !== "off" ? <Splash name={content.name} logoUrl={content.logoUrl} leaving={splash === "out"} /> : null}
@@ -369,9 +371,9 @@ export default function ClubHome({
           <RoundIcon href={content.links.whatsapp.href} label={content.links.whatsapp.text || "WhatsApp"}>
             <WhatsappIcon />
           </RoundIcon>
-          <nav className="ml-auto hidden items-center gap-5 lg:flex">
+          <nav className={`ml-auto hidden items-center gap-5 lg:flex ${mark("nav")} ${editMode ? "cursor-pointer" : ""}`} {...editProps("nav")}>
             {nav.map(([label, href]) => (
-              <a key={href} href={href} className="text-sm font-bold text-slate-700">
+              <a key={href} href={href} className={`text-sm font-bold text-slate-700 ${editMode ? "pointer-events-none" : ""}`}>
                 {label}
               </a>
             ))}
@@ -406,7 +408,19 @@ export default function ClubHome({
         {menu ? (
           <div className="menu-drop border-t border-slate-200 bg-white px-4 py-3 lg:hidden">
             {nav.map(([label, href]) => (
-              <a key={href} href={href} className="flex min-h-11 items-center font-bold" onClick={() => setMenu(false)}>
+              <a
+                key={href}
+                href={href}
+                className="flex min-h-11 items-center font-bold"
+                onClick={(event) => {
+                  if (editMode) {
+                    event.preventDefault();
+                    choose("nav");
+                    return;
+                  }
+                  setMenu(false);
+                }}
+              >
                 {label}
               </a>
             ))}
@@ -470,10 +484,11 @@ export default function ClubHome({
           <div className={`mx-auto grid max-w-6xl items-center gap-10 rounded-[2.5rem] bg-white p-6 shadow-sm md:grid-cols-2 md:p-12 ${about.shown ? "await-rise inview" : "await-rise"}`}>
             <div>
               <p className={`inline-flex rounded-full bg-purple-100 px-4 py-1.5 text-sm font-bold text-purple-700 ${mark("about-pill")} ${editMode ? "cursor-pointer" : ""}`} {...editProps("about-pill")}>{ui.aboutPill}</p>
-              <h2 className={`mt-4 text-3xl font-black tracking-tight md:text-4xl ${mark("about-title")} ${editMode ? "cursor-pointer" : ""}`} {...editProps("about-title")}>{content.about.title}</h2>
-              <p className={`mt-5 max-w-prose leading-relaxed text-slate-600 ${mark("about-p1")} ${editMode ? "cursor-pointer" : ""}`} {...editProps("about-p1")}>{content.about.p1}</p>
+              <h2 className={`mt-4 text-3xl font-black tracking-tight md:text-4xl ${mark("about-title")} ${editMode ? "cursor-pointer" : ""}`} style={{ color: paint.text }} {...editProps("about-title")}>{content.about.title}</h2>
+              <p className={`mt-5 max-w-prose leading-relaxed ${mark("about-p1")} ${editMode ? "cursor-pointer" : ""}`} style={{ color: paint.body }} {...editProps("about-p1")}>{content.about.p1}</p>
               <p
-                className={`mt-4 max-w-prose leading-relaxed text-slate-600 ${mark("about")} ${editMode ? "cursor-pointer" : ""}`}
+                className={`mt-4 max-w-prose leading-relaxed ${mark("about")} ${editMode ? "cursor-pointer" : ""}`}
+                style={{ color: paint.body }}
                 onClick={editMode ? () => choose("about") : undefined}
               >
                 {content.about.p2}
@@ -495,7 +510,7 @@ export default function ClubHome({
                     <span className="absolute top-14 left-32 h-24 w-16 rotate-2 rounded-lg bg-emerald-500 shadow" />
                   </>
                 )}
-                <p className="relative m-4 rounded-full bg-white px-3 py-1 text-xs font-bold text-slate-700">{ui.photo}</p>
+                <p className="relative m-4 rounded-full bg-white px-3 py-1 text-xs font-bold" style={{ color: paint.meta }}>{ui.photo}</p>
               </div>
             </div>
           </div>
@@ -507,23 +522,23 @@ export default function ClubHome({
             <div className="pointer-events-none absolute -right-10 bottom-6 h-56 w-56 rounded-full bg-blue-500/20 blur-3xl" />
             <div className="relative">
               <div className="flex flex-col items-center gap-4 md:block">
-                <p className={`inline-flex rounded-full border border-slate-700 bg-slate-800 px-4 py-1.5 text-sm font-bold text-orange-300 ${mark("games-copy")} ${editMode ? "cursor-pointer" : ""}`} {...editProps("games-copy")}>{ui.gamesPill}</p>
-                <button type="button" onClick={() => setLibrary(true)} className="min-h-11 text-sm font-bold text-orange-300 md:absolute md:top-0 md:right-0">
+                <p className={`inline-flex rounded-full border border-slate-700 bg-slate-800 px-4 py-1.5 text-sm font-bold ${mark("games-copy")} ${editMode ? "cursor-pointer" : ""}`} style={{ color: paint.accent }} {...editProps("games-copy")}>{ui.gamesPill}</p>
+                <button type="button" onClick={() => (editMode ? choose("games-copy") : setLibrary(true))} className={`min-h-11 text-sm font-bold md:absolute md:top-0 md:right-0 ${mark("games-copy")}`} style={{ color: paint.accent }}>
                   {ui.gamesMore}
                 </button>
               </div>
               <h2 className={`mt-6 text-center text-3xl font-black tracking-tight md:text-5xl ${mark("games-copy")} ${editMode ? "cursor-pointer" : ""}`} {...editProps("games-copy")}>
                 {ui.gamesLead}
-                <span className="bg-gradient-to-r from-orange-500 to-yellow-500 bg-clip-text text-transparent">{ui.gamesMark}</span>
+                <span style={accentStyle(paint.accent, paint.accentEnd)}>{ui.gamesMark}</span>
                 {ui.gamesTail}
               </h2>
               <p className={`mx-auto mt-4 max-w-2xl text-center text-slate-300 ${mark("games-copy")} ${editMode ? "cursor-pointer" : ""}`} {...editProps("games-copy")}>{ui.gamesSub}</p>
               <p className={`mx-auto mt-2 max-w-2xl text-center text-sm text-slate-400 ${mark("games-copy")} ${editMode ? "cursor-pointer" : ""}`} {...editProps("games-copy")}>{ui.gamesNote}</p>
               <div className="mt-8 flex items-center justify-end gap-2">
-                <button type="button" aria-label={ui.shelfPrev} onClick={() => nudgeShelf(-1)} className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-600 bg-slate-800 font-bold text-white">
+                <button type="button" aria-label={ui.shelfPrev} onClick={() => (editMode ? choose("games-copy") : nudgeShelf(-1))} className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-600 bg-slate-800 font-bold text-white">
                   ←
                 </button>
-                <button type="button" aria-label={ui.shelfNext} onClick={() => nudgeShelf(1)} className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-600 bg-slate-800 font-bold text-white">
+                <button type="button" aria-label={ui.shelfNext} onClick={() => (editMode ? choose("games-copy") : nudgeShelf(1))} className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-600 bg-slate-800 font-bold text-white">
                   →
                 </button>
               </div>
@@ -552,7 +567,7 @@ export default function ClubHome({
                   </div>
                 ))}
               </div>
-              <p className="mt-3 text-center text-xs text-slate-500 md:hidden">{ui.shelfHint}</p>
+              <p className={`mt-3 text-center text-xs text-slate-500 md:hidden ${mark("games-copy")} ${editMode ? "cursor-pointer" : ""}`} onClick={editMode ? () => choose("games-copy") : undefined}>{ui.shelfHint}</p>
             </div>
           </div>
         </section>
@@ -561,12 +576,12 @@ export default function ClubHome({
           <div className="mx-auto max-w-6xl">
             <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
               <div>
-                <p className={`inline-flex rounded-full bg-orange-100 px-4 py-1.5 text-sm font-bold text-orange-600 ${mark("news-copy")} ${editMode ? "cursor-pointer" : ""}`} {...editProps("news-copy")}>{ui.newsPill}</p>
-                <h2 className={`mt-4 text-3xl font-black tracking-tight md:text-5xl ${mark("news-copy")} ${editMode ? "cursor-pointer" : ""}`} {...editProps("news-copy")}>{ui.newsTitle}</h2>
+                <p className={`inline-flex rounded-full bg-orange-100 px-4 py-1.5 text-sm font-bold ${mark("news-copy")} ${editMode ? "cursor-pointer" : ""}`} style={{ color: paint.accent }} {...editProps("news-copy")}>{ui.newsPill}</p>
+                <h2 className={`mt-4 text-3xl font-black tracking-tight md:text-5xl ${mark("news-copy")} ${editMode ? "cursor-pointer" : ""}`} style={{ color: paint.text }} {...editProps("news-copy")}>{ui.newsTitle}</h2>
               </div>
-              <p className={`max-w-xs text-sm text-slate-500 md:text-right ${mark("news-copy")} ${editMode ? "cursor-pointer" : ""}`} {...editProps("news-copy")}>{ui.newsAside}</p>
+              <p className={`max-w-xs text-sm md:text-right ${mark("news-copy")} ${editMode ? "cursor-pointer" : ""}`} style={{ color: paint.meta }} {...editProps("news-copy")}>{ui.newsAside}</p>
             </div>
-            <div className="mt-8 inline-flex w-full rounded-full bg-white p-1 shadow-sm sm:w-auto">
+            <div className={`mt-8 inline-flex w-full rounded-full bg-white p-1 shadow-sm sm:w-auto ${mark("news-copy")} ${editMode ? "cursor-pointer" : ""}`} {...editProps("news-copy")}>
               {([
                 ["club", ui.tabClub],
                 ["classmate", ui.tabClass],
@@ -576,8 +591,9 @@ export default function ClubHome({
                 <button
                   key={id}
                   type="button"
-                  onClick={() => pickGroup(id)}
-                  className={`min-h-11 flex-1 rounded-full px-5 text-sm font-bold sm:flex-none ${group === id ? "bg-slate-900 text-white" : "text-slate-500 hover:text-orange-500"}`}
+                  onClick={() => (editMode ? choose("news-copy") : pickGroup(id))}
+                  className={`min-h-11 flex-1 rounded-full px-5 text-sm font-bold sm:flex-none ${group === id ? "bg-slate-900 text-white" : ""}`}
+                  style={group === id ? undefined : { color: paint.meta }}
                 >
                   {label}
                 </button>
@@ -589,6 +605,11 @@ export default function ClubHome({
                   <EventCard
                     event={item}
                     ui={ui}
+                    text={paint.text}
+                    body={paint.body}
+                    meta={paint.meta}
+                    accent={paint.accent}
+                    accentEnd={paint.accentEnd}
                     picked={selected === `event:${item.id}`}
                     onOpen={() => (editMode ? choose(`event:${item.id}`) : setModal({ type: "event", id: item.id }))}
                   />
@@ -622,21 +643,21 @@ export default function ClubHome({
         </section>
       </main>
 
-      <footer className="bg-slate-950 py-12 text-center text-slate-300">
+      <footer className={`bg-slate-950 py-12 text-center text-slate-300 ${mark("footer")} ${editMode ? "cursor-pointer" : ""}`} {...editProps("footer")}>
         <p className="text-lg font-black text-white">{content.name}</p>
         <div className="mt-4 flex flex-wrap justify-center gap-6 text-sm font-bold">
-          <a href="#about" className="inline-flex min-h-11 items-center">{ui.navAbout}</a>
-          <a href="#games" className="inline-flex min-h-11 items-center">{ui.navGames}</a>
-          <a href="#join" className="inline-flex min-h-11 items-center">{ui.navJoin}</a>
+          <a href="#about" className={`inline-flex min-h-11 items-center ${editMode ? "pointer-events-none" : ""}`}>{ui.navAbout}</a>
+          <a href="#games" className={`inline-flex min-h-11 items-center ${editMode ? "pointer-events-none" : ""}`}>{ui.navGames}</a>
+          <a href="#join" className={`inline-flex min-h-11 items-center ${editMode ? "pointer-events-none" : ""}`}>{ui.navJoin}</a>
         </div>
-        <p className="mt-6 text-sm text-slate-500">{content.footer}</p>
+        <p className="mt-6 text-sm" style={{ color: paint.meta }}>{content.footer}</p>
       </footer>
 
       {library ? (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900 text-white">
           <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
             <div className="flex flex-wrap items-center gap-3">
-              <button type="button" onClick={() => setLibrary(false)} className="inline-flex min-h-11 items-center font-bold text-orange-300">
+              <button type="button" onClick={() => setLibrary(false)} className="inline-flex min-h-11 items-center font-bold" style={{ color: paint.accent }}>
                 {ui.libraryBack}
               </button>
               {editMode && onLibraryAdd ? (
@@ -672,7 +693,8 @@ export default function ClubHome({
                   type="button"
                   aria-pressed={kind === item}
                   onClick={() => setKind(item)}
-                  className={`min-h-11 rounded-full px-4 text-sm font-bold ${kind === item ? "bg-orange-500 text-white" : "border border-slate-600 text-slate-300"}`}
+                  className={`min-h-11 rounded-full px-4 text-sm font-bold ${kind === item ? "text-white" : "border border-slate-600 text-slate-300"}`}
+                  style={kind === item ? { backgroundColor: paint.accent } : undefined}
                 >
                   {item === "all" ? ui.filterAll : kindLabel[item]}
                 </button>
@@ -819,13 +841,13 @@ export default function ClubHome({
                 </div>
                 <div className={`p-6 ${eventEnded(activeEvent) ? "opacity-90" : ""}`}>
                   <h2 id={titleId} className="text-2xl font-black">{activeEvent.title}</h2>
-                  <p className="mt-3 text-sm text-slate-600"><span className="font-bold text-slate-900">{ui.time}</span> {activeEvent.time}</p>
-                  <p className="mt-1 text-sm text-slate-600">
-                    <span className="font-bold text-slate-900">{ui.fee}</span> {activeEvent.fee}
+                  <p className="mt-3 text-sm" style={{ color: paint.body }}><span className="font-bold" style={{ color: paint.text }}>{ui.time}</span> {activeEvent.time}</p>
+                  <p className="mt-1 text-sm" style={{ color: paint.body }}>
+                    <span className="font-bold" style={{ color: paint.text }}>{ui.fee}</span> {activeEvent.fee}
                     {activeEvent.feePlaceholder ? <ReplaceTag label={ui.replace} className="ml-2" /> : null}
                   </p>
-                  <p className="mt-1 text-sm text-slate-600"><span className="font-bold text-slate-900">{ui.place}</span> {activeEvent.place}</p>
-                  <Sessions event={activeEvent} ui={ui} ended={eventEnded(activeEvent)} />
+                  <p className="mt-1 text-sm" style={{ color: paint.body }}><span className="font-bold" style={{ color: paint.text }}>{ui.place}</span> {activeEvent.place}</p>
+                  <Sessions event={activeEvent} ui={ui} ended={eventEnded(activeEvent)} text={paint.text} meta={paint.meta} accent={paint.accent} accentEnd={paint.accentEnd} />
                   <p className="mt-5 whitespace-pre-line leading-relaxed text-slate-700">{activeEvent.body}</p>
                   {eventEnded(activeEvent) ? null : (
                     <button
@@ -939,8 +961,8 @@ function Welcome({ content, onClose, onJump }: { content: ClubContent; onClose: 
         <button type="button" aria-label={ui.welcomeClose} onClick={onClose} className="absolute top-3 right-3 inline-flex min-h-11 min-w-11 items-center justify-center rounded-full text-xl font-bold text-slate-700">
           ×
         </button>
-        <h2 id="welcome-title" className="pr-10 text-2xl font-black">{ui.welcomeTitle}</h2>
-        <p className="mt-3 leading-relaxed text-slate-600">{content.welcome}</p>
+        <h2 id="welcome-title" className="pr-10 text-2xl font-black" style={{ color: content.colors.text }}>{ui.welcomeTitle}</h2>
+        <p className="mt-3 leading-relaxed" style={{ color: content.colors.body }}>{content.welcome}</p>
         <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
           <ChannelButton link={content.links.whatsapp} className="bg-green-500" />
           <ChannelButton link={content.links.instagram} className="bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400" />
@@ -1004,21 +1026,32 @@ function WhatsappIcon() {
 function NextEventDock({
   event,
   ui,
+  accent,
+  placed,
+  editing = false,
   onOpen,
   onDismiss,
 }: {
   event: ClubEvent;
   ui: ClubContent["ui"];
+  accent: string;
+  placed: "screen" | "preview";
+  editing?: boolean;
   onOpen: () => void;
   onDismiss: () => void;
 }) {
-  const [now, setNow] = useState(() => Date.now());
+  const [now, setNow] = useState<number | null>(null);
   useEffect(() => {
+    const kick = window.setTimeout(() => setNow(Date.now()), 0);
     const id = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(id);
+    return () => {
+      window.clearTimeout(kick);
+      window.clearInterval(id);
+    };
   }, []);
 
   const remain = useMemo(() => {
+    if (now === null) return { d: 0, h: 0, m: 0, s: 0 };
     const ms = Math.max(0, new Date(event.startsAt!).getTime() - now);
     const total = Math.floor(ms / 1000);
     return {
@@ -1030,9 +1063,12 @@ function NextEventDock({
   }, [event.startsAt, now]);
 
   return (
-    <aside className="fixed right-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-[55] w-[12.5rem] rounded-2xl bg-slate-900 p-2.5 text-white shadow-2xl ring-2 ring-orange-400/50 sm:right-4 sm:bottom-4 sm:w-[min(100%-2rem,19rem)] sm:rounded-[1.5rem] sm:p-4">
+    <aside
+      onClick={editing ? onOpen : undefined}
+      className={`${placed === "preview" ? "absolute top-20 right-3 z-30 w-60" : "fixed right-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-[55] w-[12.5rem] sm:right-4 sm:bottom-4 sm:w-[min(100%-2rem,19rem)]"} rounded-2xl bg-slate-900 p-2.5 text-white shadow-2xl ring-2 ring-orange-400/50 sm:rounded-[1.5rem] sm:p-4 ${editing ? "cursor-pointer" : ""}`}
+    >
       <div className="flex items-start justify-between gap-2">
-        <p className="text-[10px] font-bold tracking-wide text-orange-300 sm:text-xs">{ui.nextLabel}</p>
+        <p className="text-[10px] font-bold tracking-wide sm:text-xs" style={{ color: accent }}>{ui.nextLabel}</p>
         <button type="button" onClick={onDismiss} className="text-[10px] font-bold text-slate-400 hover:text-white sm:text-xs">
           {ui.nextDismiss}
         </button>
@@ -1047,7 +1083,7 @@ function NextEventDock({
           [remain.s, ui.nextSec],
         ].map(([value, unit]) => (
           <div key={String(unit)} className="rounded-lg bg-white/10 py-1 sm:rounded-xl sm:py-2">
-            <p className="text-sm font-black tabular-nums sm:text-lg">{value}</p>
+            <p className="text-sm font-black tabular-nums sm:text-lg">{now === null ? "–" : value}</p>
             <p className="text-[9px] text-slate-400 sm:text-[10px]">{unit}</p>
           </div>
         ))}
@@ -1129,11 +1165,21 @@ function eventEnded(event: ClubEvent) {
 function EventCard({
   event,
   ui,
+  text,
+  body,
+  meta,
+  accent,
+  accentEnd,
   onOpen,
   picked = false,
 }: {
   event: ClubEvent;
   ui: ClubContent["ui"];
+  text: string;
+  body: string;
+  meta: string;
+  accent: string;
+  accentEnd: string;
   onOpen: () => void;
   picked?: boolean;
 }) {
@@ -1142,20 +1188,20 @@ function EventCard({
     <article className={`overflow-hidden rounded-[2rem] bg-white shadow-sm ${picked ? "ring-2 ring-orange-500" : ""}`}>
       <div className={`relative h-56 bg-gradient-to-br ${event.tint} ${ended ? "opacity-70" : ""}`}>
         {event.coverUrl ? <img src={event.coverUrl} alt="" className="absolute inset-0 h-full w-full object-cover" /> : <span className="absolute inset-0 grid place-items-center text-6xl" aria-hidden>{event.emoji}</span>}
-        <p className="absolute top-4 left-4 z-10 rounded-xl bg-white/80 px-3 py-2 text-sm font-black text-slate-900 backdrop-blur">{event.badge}</p>
+        <p className="absolute top-4 left-4 z-10 rounded-xl bg-white/80 px-3 py-2 text-sm font-black backdrop-blur" style={{ color: text }}>{event.badge}</p>
         {event.placeholder ? <p className="absolute top-4 right-4 z-10 rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800">{ui.cardReplace}</p> : null}
         {ended ? (
           <div className="absolute inset-x-0 bottom-0 z-10 bg-stone-900/75 px-3 py-2 text-center text-sm font-bold text-white">{ui.endedBar}</div>
         ) : null}
       </div>
       <div className={`p-5 ${ended ? "opacity-80" : ""}`}>
-        <h3 className="text-xl font-black transition-colors duration-[240ms] ease-[cubic-bezier(.2,0,0,1)] hover:text-orange-500">{event.title}</h3>
-        <p className="mt-2 text-sm font-bold text-orange-600">
+        <h3 className="text-xl font-black" style={{ color: text }}>{event.title}</h3>
+        <p className="mt-2 text-sm font-bold" style={{ color: accent }}>
           {event.fee}
           {event.feePlaceholder ? <ReplaceTag label={ui.replace} className="ml-2" /> : null}
         </p>
-        <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-slate-600">{event.summary}</p>
-        <Sessions event={event} ui={ui} ended={ended} />
+        <p className="mt-3 whitespace-pre-line text-sm leading-relaxed" style={{ color: body }}>{event.summary}</p>
+        <Sessions event={event} ui={ui} ended={ended} text={text} meta={meta} accent={accent} accentEnd={accentEnd} />
         <button
           type="button"
           onClick={onOpen}
@@ -1170,26 +1216,26 @@ function EventCard({
   );
 }
 
-function Sessions({ event, ui, ended = false }: { event: ClubEvent; ui: ClubContent["ui"]; ended?: boolean }) {
+function Sessions({ event, ui, ended = false, text, meta, accent, accentEnd }: { event: ClubEvent; ui: ClubContent["ui"]; ended?: boolean; text: string; meta: string; accent: string; accentEnd: string }) {
   return (
     <div className="mt-4 rounded-2xl bg-slate-100 p-4 text-left">
-      <p className="text-sm font-bold text-slate-800">{ui.sessions}</p>
+      <p className="text-sm font-bold" style={{ color: text }}>{ui.sessions}</p>
       <ul className="mt-3 space-y-3">
         {event.sessions.map((session) => {
           const ratio = session.capacity > 0 ? Math.min(100, Math.round((session.signed / session.capacity) * 100)) : 0;
           return (
             <li key={session.name}>
               <div className="flex items-center justify-between gap-3 text-sm">
-                <span className="font-bold text-slate-800">{session.name}</span>
-                <span className="text-slate-500">
+                <span className="font-bold" style={{ color: text }}>{session.name}</span>
+                <span style={{ color: meta }}>
                   {session.signed} / {session.capacity}
                   {session.placeholder ? ` · ${ui.countNote}` : ""}
                 </span>
               </div>
               <div className="mt-1 h-2 overflow-hidden rounded-full bg-slate-200">
                 <div
-                  className={`h-full rounded-full ${ended ? "bg-stone-400" : "bg-gradient-to-r from-orange-500 to-yellow-500"}`}
-                  style={{ width: `${ratio}%` }}
+                  className={`h-full rounded-full ${ended ? "bg-stone-400" : ""}`}
+                  style={ended ? { width: `${ratio}%` } : { width: `${ratio}%`, backgroundImage: `linear-gradient(to right, ${accent}, ${accentEnd})` }}
                 />
               </div>
             </li>
