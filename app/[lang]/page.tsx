@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import VisitBeacon from "@/components/VisitBeacon";
 import ClubHome from "@/components/club/ClubHome";
 import { loadClub } from "@/lib/site";
 import { isLang } from "@/lib/types";
@@ -14,5 +15,10 @@ export default async function HomePage({ params }: { params: Promise<{ lang: str
   const { lang } = await params;
   if (!isLang(lang)) notFound();
   const content = await loadClub(lang);
-  return <ClubHome content={content} lang={lang} />;
+  return (
+    <>
+      <VisitBeacon />
+      <ClubHome content={content} lang={lang} />
+    </>
+  );
 }

@@ -2,11 +2,13 @@
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
+import VisitPanel from "@/components/admin/VisitPanel";
 import ClubHome from "@/components/club/ClubHome";
 import LogoutButton from "@/components/LogoutButton";
 import { clubContent } from "@/data/club";
 import { applySiteDraft, type SiteColors, type SiteDraft, type SiteEventDraft, type SiteGameDraft, type SiteHeroCopy } from "@/data/siteDraft";
 import { cssColor, fallbackColors } from "@/lib/color";
+import type { VisitSummary } from "@/lib/visitMath";
 
 const fieldClass = "mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900";
 
@@ -22,7 +24,7 @@ function localStart(iso: string) {
   return match?.[1] ?? "";
 }
 
-export default function SiteEditor({ initial }: { initial: SiteDraft }) {
+export default function SiteEditor({ initial, visits }: { initial: SiteDraft; visits: VisitSummary }) {
   const [draft, setDraft] = useState(initial);
   const [selected, setSelected] = useState<string | null>(null);
   const [pane, setPane] = useState<"preview" | "edit">("preview");
@@ -84,6 +86,7 @@ export default function SiteEditor({ initial }: { initial: SiteDraft }) {
           <LogoutButton />
         </div>
       </header>
+      <VisitPanel visits={visits} />
       <div className="flex min-h-0 flex-1">
         <div className={`min-w-0 flex-1 overflow-y-auto [transform:translateZ(0)] ${pane === "edit" ? "max-lg:hidden" : ""}`}>
           <ClubHome content={content} lang="zh" editMode selected={selected} onSelect={choose} onLibraryAdd={() => ask("要新增一盒桌游吗？", () => insertGame(setDraft, choose))} />
