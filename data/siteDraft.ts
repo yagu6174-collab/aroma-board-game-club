@@ -1,4 +1,5 @@
 import type { ClubContent, ClubLink, GameKind } from "@/data/club";
+import { chromeKeys, type ChromeKey } from "@/data/uiChrome";
 import { cssColor } from "@/lib/color";
 
 export type SiteGameDraft = {
@@ -86,11 +87,16 @@ export type SiteLinksDraft = {
   form: ClubLink;
 };
 
+export type SiteChrome = Record<ChromeKey, string>;
+
 export type SiteDraft = {
-  revision: 4;
+  revision: 5;
   claim: string;
   about: string;
   join: string;
+  footer: string;
+  borrowRules: string;
+  topics: string[];
   photoUrl: string;
   name: string;
   enName: string;
@@ -98,6 +104,7 @@ export type SiteDraft = {
   heroLines: SiteHeroLines;
   heroCopy: SiteHeroCopy;
   colors: SiteColors;
+  chrome: SiteChrome;
   sections: SiteSections;
   games: SiteGameDraft[];
   events: SiteEventDraft[];
@@ -113,6 +120,23 @@ function str(value: unknown) {
 
 function text(value: unknown, fallback: string) {
   return typeof value === "string" ? value.trim() : fallback;
+}
+
+function chromeFrom(content: ClubContent): SiteChrome {
+  const chrome = {} as SiteChrome;
+  for (const key of chromeKeys) chrome[key] = content.ui[key];
+  return chrome;
+}
+
+function chromeOf(raw: Record<string, unknown>, seed: SiteChrome): SiteChrome {
+  const chrome = {} as SiteChrome;
+  for (const key of chromeKeys) chrome[key] = text(raw[key], seed[key]);
+  return chrome;
+}
+
+function topicsOf(value: unknown, seed: string[]) {
+  if (!Array.isArray(value)) return seed;
+  return value.map((item) => text(item, "")).filter(Boolean);
 }
 
 function asRecord(value: unknown) {
@@ -155,10 +179,13 @@ function linkOf(value: unknown, fallback: ClubLink): ClubLink {
 
 export function siteDraftFrom(content: ClubContent): SiteDraft {
   return {
-    revision: 4,
+    revision: 5,
     claim: content.hero.intro,
     about: content.about.p2,
     join: content.join,
+    footer: content.footer,
+    borrowRules: content.borrowRules,
+    topics: [...content.topics],
     photoUrl: content.about.photoUrl,
     name: content.name,
     enName: content.enName,
@@ -178,6 +205,7 @@ export function siteDraftFrom(content: ClubContent): SiteDraft {
       learnMore: content.ui.learnMore,
     },
     colors: { ...content.colors },
+    chrome: chromeFrom(content),
     sections: {
       aboutPill: content.ui.aboutPill,
       aboutTitle: content.about.title,
@@ -301,6 +329,9 @@ export function applySiteDraft(base: ClubContent, draft: SiteDraft): ClubContent
     welcome: draft.claim,
     about: { ...base.about, title: draft.sections.aboutTitle, p1: draft.sections.aboutP1, p2: draft.about, photoUrl: draft.photoUrl },
     join: draft.join,
+    footer: draft.footer,
+    borrowRules: draft.borrowRules,
+    topics: draft.topics,
     ui: {
       ...base.ui,
       aboutPill: draft.sections.aboutPill,
@@ -320,6 +351,7 @@ export function applySiteDraft(base: ClubContent, draft: SiteDraft): ClubContent
       signup: draft.heroCopy.signup,
       signupEvent: draft.heroCopy.signupEvent,
       learnMore: draft.heroCopy.learnMore,
+      ...draft.chrome,
     },
     games,
     events,
@@ -338,11 +370,15 @@ export function normalizeSiteDraft(input: unknown, base: ClubContent): SiteDraft
   const heroRaw = asRecord(raw.heroLines);
   const heroCopyRaw = asRecord(raw.heroCopy);
   const colorsRaw = asRecord(raw.colors);
+  const chromeRaw = asRecord(raw.chrome);
   return {
-    revision: 4,
+    revision: 5,
     claim: text(raw.claim, seed.claim),
     about: text(raw.about, seed.about),
     join: text(raw.join, seed.join),
+    footer: text(raw.footer, seed.footer),
+    borrowRules: text(raw.borrowRules, seed.borrowRules),
+    topics: topicsOf(raw.topics, seed.topics),
     photoUrl: text(raw.photoUrl, seed.photoUrl),
     name: text(raw.name, seed.name),
     enName: text(raw.enName, seed.enName),
@@ -368,6 +404,7 @@ export function normalizeSiteDraft(input: unknown, base: ClubContent): SiteDraft
       body: cssColor(colorsRaw.body, seed.colors.body),
       meta: cssColor(colorsRaw.meta, seed.colors.meta),
     },
+    chrome: chromeOf(chromeRaw, seed.chrome),
     sections: {
       aboutPill: text(sectionsRaw.aboutPill, seed.sections.aboutPill),
       aboutTitle: text(sectionsRaw.aboutTitle, seed.sections.aboutTitle),

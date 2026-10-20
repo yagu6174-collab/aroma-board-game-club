@@ -6,6 +6,7 @@ import ClubHome from "@/components/club/ClubHome";
 import LogoutButton from "@/components/LogoutButton";
 import { clubContent } from "@/data/club";
 import { applySiteDraft, type SiteColors, type SiteDraft, type SiteEventDraft, type SiteGameDraft, type SiteHeroCopy } from "@/data/siteDraft";
+import type { ChromeKey } from "@/data/uiChrome";
 import { cssColor, fallbackColors } from "@/lib/color";
 
 const fieldClass = "mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900";
@@ -259,6 +260,7 @@ function EditorForm({
     return (
       <FormShell title="社团照片">
         <ImageField label="图片" value={draft.photoUrl} onChange={(photoUrl) => onChange({ ...draft, photoUrl })} />
+        <ChromeFields draft={draft} onChange={onChange} rows={[["photo", "照片说明"]]} />
       </FormShell>
     );
   }
@@ -287,6 +289,28 @@ function EditorForm({
         <Field label="教学库标题">
           <input value={draft.sections.libraryTitle} onChange={(input) => onChange({ ...draft, sections: { ...draft.sections, libraryTitle: input.target.value } })} className={fieldClass} />
         </Field>
+        <ChromeFields
+          draft={draft}
+          onChange={onChange}
+          rows={[
+            ["gamesMore", "更多桌游"],
+            ["shelfPrev", "上一盒"],
+            ["shelfNext", "下一盒"],
+            ["shelfHint", "滑动提示"],
+            ["play", "立即试玩"],
+            ["teach", "观看教学"],
+            ["borrow", "预约借用"],
+            ["kindParty", "类型：派对"],
+            ["kindStrategy", "类型：策略"],
+            ["kindDeduce", "类型：推理阵营"],
+            ["kindOther", "类型：其他"],
+            ["libraryBack", "教学库返回"],
+            ["search", "搜索提示"],
+            ["empty", "没有结果"],
+            ["filterAll", "全部"],
+            ["teachSoon", "教学即将放上"],
+          ]}
+        />
       </FormShell>
     );
   }
@@ -303,6 +327,23 @@ function EditorForm({
         <Field label="说明">
           <textarea rows={3} value={draft.sections.newsAside} onChange={(input) => onChange({ ...draft, sections: { ...draft.sections, newsAside: input.target.value } })} className={fieldClass} />
         </Field>
+        <ChromeFields
+          draft={draft}
+          onChange={onChange}
+          rows={[
+            ["tabClub", "社团活动"],
+            ["tabClass", "同学活动"],
+            ["sessions", "场次标题"],
+            ["openEvent", "报名按钮"],
+            ["openEnded", "回顾按钮"],
+            ["endedBar", "已结束横条"],
+            ["fee", "费用"],
+            ["time", "时间"],
+            ["place", "地点"],
+            ["countNote", "名额占位"],
+            ["cardReplace", "整张可替换"],
+          ]}
+        />
       </FormShell>
     );
   }
@@ -320,6 +361,145 @@ function EditorForm({
           links={draft.links}
           onChange={(links) => onChange({ ...draft, links })}
         />
+      </FormShell>
+    );
+  }
+
+  if (selected === "nav") {
+    return (
+      <FormShell title="导航">
+        <ChromeFields
+          draft={draft}
+          onChange={onChange}
+          rows={[
+            ["navHome", "首页"],
+            ["navAbout", "关于我们"],
+            ["navGames", "桌游库"],
+            ["navNews", "最新消息"],
+            ["navJoin", "加入我们"],
+            ["menu", "菜单"],
+          ]}
+        />
+        <p className="mt-2 text-xs leading-relaxed text-stone-500">页头、页脚和欢迎窗里的栏目名共用这几句。手机上的菜单按钮读「菜单」。</p>
+      </FormShell>
+    );
+  }
+
+  if (selected === "footer") {
+    return (
+      <FormShell title="页脚">
+        <Field label="版权行">
+          <textarea rows={3} value={draft.footer} onChange={(input) => onChange({ ...draft, footer: input.target.value })} className={fieldClass} />
+        </Field>
+        <p className="mt-2 text-xs leading-relaxed text-stone-500">社团名用标志里的中文名。关于我们、桌游库、加入我们用导航里的字。英文页仍显示这行原文。</p>
+        <button type="button" className={`${quietClass} mt-3`} onClick={() => onSelect("nav")}>
+          改导航文字
+        </button>
+      </FormShell>
+    );
+  }
+
+  if (selected === "next") {
+    return (
+      <FormShell title="下一场">
+        <ChromeFields
+          draft={draft}
+          onChange={onChange}
+          rows={[
+            ["nextLabel", "小标题"],
+            ["nextOpen", "查看按钮"],
+            ["nextDay", "天"],
+            ["nextHour", "时"],
+            ["nextMin", "分"],
+            ["nextSec", "秒"],
+            ["nextDismiss", "收起"],
+          ]}
+        />
+        <p className="mt-2 text-xs leading-relaxed text-stone-500">右上角这张卡只出现在还没开始的最近一场。标题和时间来自那场活动。</p>
+      </FormShell>
+    );
+  }
+
+  if (selected === "welcome") {
+    return (
+      <FormShell title="欢迎窗">
+        <ChromeFields
+          draft={draft}
+          onChange={onChange}
+          rows={[
+            ["welcomeTitle", "标题"],
+            ["welcomeClose", "关闭"],
+          ]}
+        />
+        <p className="mt-2 text-xs leading-relaxed text-stone-500">正文和首屏介绍是同一段。第一次打开主页时出现。</p>
+        <button type="button" className={`${quietClass} mt-3`} onClick={() => onSelect("claim")}>
+          改这段介绍
+        </button>
+      </FormShell>
+    );
+  }
+
+  if (selected === "topics") {
+    return (
+      <FormShell title="破冰话题">
+        <Field label="话题，一行一条">
+          <textarea
+            rows={10}
+            value={draft.topics.join("\n")}
+            onChange={(input) => onChange({ ...draft, topics: input.target.value.split("\n") })}
+            className={fieldClass}
+          />
+        </Field>
+        <ChromeFields
+          draft={draft}
+          onChange={onChange}
+          rows={[
+            ["iceTitle", "标题"],
+            ["iceLead", "说明"],
+            ["iceDraw", "立即抽签"],
+            ["iceDrawing", "抽签中"],
+            ["iceAgain", "再抽一次"],
+          ]}
+        />
+        <p className="mt-2 text-xs leading-relaxed text-stone-500">点桌游上的「立即试玩」会打开这个窗。保存时去掉空行。英文页仍显示这些话题原文。</p>
+      </FormShell>
+    );
+  }
+
+  if (selected === "borrow") {
+    return (
+      <FormShell title="预约借用">
+        <Field label="借用规则">
+          <textarea rows={6} value={draft.borrowRules} onChange={(input) => onChange({ ...draft, borrowRules: input.target.value })} className={fieldClass} />
+        </Field>
+        <ChromeFields
+          draft={draft}
+          onChange={onChange}
+          rows={[
+            ["borrowClear", "可预约说明"],
+            ["borrowName", "姓名"],
+            ["borrowId", "学号"],
+            ["borrowPhone", "电话"],
+            ["borrowEmail", "邮箱"],
+            ["borrowStart", "开始时间"],
+            ["borrowEnd", "归还时间"],
+            ["borrowNote", "备注"],
+            ["borrowOptional", "选填"],
+            ["borrowSubmit", "提交"],
+            ["borrowSaved", "已提交"],
+            ["borrowLocal", "未写入后台"],
+            ["close", "关闭"],
+          ]}
+        />
+        <p className="mt-2 text-xs leading-relaxed text-stone-500">点可借用桌游上的「预约借用」会打开这个窗。缺姓名、时间不对这类提示是系统文字，不在这里改。</p>
+      </FormShell>
+    );
+  }
+
+  if (selected === "colors") {
+    return (
+      <FormShell title="全站颜色">
+        <ColorFields colors={draft.colors} onChange={(colors) => onChange({ ...draft, colors })} />
       </FormShell>
     );
   }
@@ -376,23 +556,34 @@ function EditorForm({
 
   return (
     <FormShell title="编辑">
-      <p className="text-sm leading-relaxed text-stone-600">点预览里的主标题、学校和名称、介绍、报名按钮、关于、一盒桌游、一张活动卡，或加入我们这段文字。</p>
+      <p className="text-sm leading-relaxed text-stone-600">点预览里的一块文字，或从下面进入。每一项对应主页上的一块。</p>
       <div className="mt-4 flex flex-wrap gap-2">
-        <button type="button" className={quietClass} onClick={() => onSelect("hero")}>
-          主标题和颜色
-        </button>
-        <button type="button" className={quietClass} onClick={() => onSelect("org")}>
-          学校和名称
-        </button>
-        <button type="button" className={quietClass} onClick={() => onSelect("claim")}>
-          首屏介绍
-        </button>
-        <button type="button" className={quietClass} onClick={() => onSelect("cta")}>
-          报名按钮
-        </button>
-        <button type="button" className={quietClass} onClick={() => onSelect("brand")}>
-          标志和名称
-        </button>
+        {(
+          [
+            ["hero", "主标题"],
+            ["org", "学校和名称"],
+            ["claim", "首屏介绍"],
+            ["cta", "报名按钮"],
+            ["colors", "全站颜色"],
+            ["brand", "标志和名称"],
+            ["nav", "导航"],
+            ["about-pill", "关于"],
+            ["about", "关于正文"],
+            ["about-photo", "社团照片"],
+            ["games-copy", "桌游区文字"],
+            ["news-copy", "活动区文字"],
+            ["join", "加入我们"],
+            ["footer", "页脚"],
+            ["next", "下一场"],
+            ["welcome", "欢迎窗"],
+            ["topics", "破冰话题"],
+            ["borrow", "预约借用"],
+          ] as const
+        ).map(([id, label]) => (
+          <button key={id} type="button" className={quietClass} onClick={() => onSelect(id)}>
+            {label}
+          </button>
+        ))}
         <button type="button" className={quietClass} onClick={() => ask("要新增一盒桌游吗？", () => insertGame(onChange, onSelect))}>
           加一盒桌游
         </button>
@@ -658,16 +849,40 @@ function patchHeroCopy(draft: SiteDraft, patch: Partial<SiteHeroCopy>): SiteDraf
   return { ...draft, heroCopy: { ...draft.heroCopy, ...patch } };
 }
 
+function setChrome(draft: SiteDraft, patch: Partial<SiteDraft["chrome"]>): SiteDraft {
+  return { ...draft, chrome: { ...draft.chrome, ...patch } };
+}
+
+function ChromeFields({
+  draft,
+  rows,
+  onChange,
+}: {
+  draft: SiteDraft;
+  rows: readonly (readonly [ChromeKey, string])[];
+  onChange: (next: SiteDraft) => void;
+}) {
+  return (
+    <>
+      {rows.map(([key, label]) => (
+        <Field key={key} label={label}>
+          <input value={draft.chrome[key]} onChange={(input) => onChange(setChrome(draft, { [key]: input.target.value }))} className={fieldClass} />
+        </Field>
+      ))}
+    </>
+  );
+}
+
 function ColorFields({ colors, onChange }: { colors: SiteColors; onChange: (next: SiteColors) => void }) {
   return (
     <fieldset className="mt-4 rounded-2xl border border-stone-200 p-3">
       <legend className="px-1 text-xs font-bold text-stone-500">颜色</legend>
-      <ColorField label="主文字" hint="标题和中文名" value={colors.text} fallback={fallbackColors.text} onChange={(text) => onChange({ ...colors, text })} />
-      <ColorField label="强调" hint="英文名，以及标题里强调词的起始色" value={colors.accent} fallback={fallbackColors.accent} onChange={(accent) => onChange({ ...colors, accent })} />
-      <ColorField label="强调渐变" hint="强调词从左到右的结束色" value={colors.accentEnd} fallback={fallbackColors.accentEnd} onChange={(accentEnd) => onChange({ ...colors, accentEnd })} />
-      <ColorField label="说明文字" hint="标题下的介绍段落" value={colors.body} fallback={fallbackColors.body} onChange={(body) => onChange({ ...colors, body })} />
-      <ColorField label="辅助文字" hint="学校和语言行" value={colors.meta} fallback={fallbackColors.meta} onChange={(meta) => onChange({ ...colors, meta })} />
-      <p className="mt-3 text-xs leading-relaxed text-stone-500">用 #RRGGBB。保存后公开页立刻用这组颜色，不用重新部署。</p>
+      <ColorField label="主文字" hint="首屏标题、中文名、关于和活动区的大标题" value={colors.text} fallback={fallbackColors.text} onChange={(text) => onChange({ ...colors, text })} />
+      <ColorField label="强调" hint="英文名、桌游区小标题、活动费用，以及强调词的起始色" value={colors.accent} fallback={fallbackColors.accent} onChange={(accent) => onChange({ ...colors, accent })} />
+      <ColorField label="强调渐变" hint="强调词和报名进度条从左到右的结束色" value={colors.accentEnd} fallback={fallbackColors.accentEnd} onChange={(accentEnd) => onChange({ ...colors, accentEnd })} />
+      <ColorField label="说明文字" hint="首屏介绍、关于两段、活动摘要" value={colors.body} fallback={fallbackColors.body} onChange={(body) => onChange({ ...colors, body })} />
+      <ColorField label="辅助文字" hint="学校和语言行、活动区说明、页脚版权行" value={colors.meta} fallback={fallbackColors.meta} onChange={(meta) => onChange({ ...colors, meta })} />
+      <p className="mt-3 text-xs leading-relaxed text-stone-500">用 #RRGGBB。不是这种格式的值在保存时会被忽略。深色区块上的白字保持白色，避免主文字色融进背景。</p>
     </fieldset>
   );
 }

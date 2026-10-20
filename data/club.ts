@@ -1,4 +1,5 @@
 import { fallbackColors } from "@/lib/color";
+import { chromeKeys } from "@/data/uiChrome";
 import aboutDoc from "@/content/about.json";
 import articlesDoc from "@/content/articles.json";
 import contactDoc from "@/content/contact.json";
@@ -471,6 +472,7 @@ const editableUiKeys = [
   "signup",
   "signupEvent",
   "learnMore",
+  ...chromeKeys,
 ] as const;
 
 export function presentClub(content: ClubContent, lang: Lang): ClubContent {
