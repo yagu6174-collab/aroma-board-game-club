@@ -5,7 +5,8 @@ import Link from "next/link";
 import ClubHome from "@/components/club/ClubHome";
 import LogoutButton from "@/components/LogoutButton";
 import { clubContent } from "@/data/club";
-import { applySiteDraft, type SiteDraft, type SiteEventDraft, type SiteGameDraft } from "@/data/siteDraft";
+import { applySiteDraft, type SiteColors, type SiteDraft, type SiteEventDraft, type SiteGameDraft, type SiteHeroCopy } from "@/data/siteDraft";
+import { cssColor, fallbackColors } from "@/lib/color";
 
 const fieldClass = "mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900";
 
@@ -137,10 +138,13 @@ function EditorForm({
 
   if (selected === "claim") {
     return (
-      <FormShell title="首屏主张">
-        <Field label="主张">
+      <FormShell title="首屏介绍">
+        <HeroNav selected="claim" onSelect={onSelect} />
+        <Field label="介绍">
           <textarea rows={6} value={draft.claim} onChange={(input) => onChange({ ...draft, claim: input.target.value })} className={fieldClass} />
         </Field>
+        <p className="mt-2 text-xs leading-relaxed text-stone-500">这段出现在主标题和两个按钮之间，用说明文字色。第一次打开页面的欢迎窗也用这段。</p>
+        <ColorFields colors={draft.colors} onChange={(colors) => onChange({ ...draft, colors })} />
       </FormShell>
     );
   }
@@ -163,18 +167,64 @@ function EditorForm({
   if (selected === "hero") {
     return (
       <FormShell title="主标题">
+        <HeroNav selected="hero" onSelect={onSelect} />
         <Field label="第一行">
           <input value={draft.heroLines.line1} onChange={(input) => onChange({ ...draft, heroLines: { ...draft.heroLines, line1: input.target.value } })} className={fieldClass} />
         </Field>
-        <Field label="第二行前">
+        <Field label="第二行，强调色之前">
           <input value={draft.heroLines.line2Before} onChange={(input) => onChange({ ...draft, heroLines: { ...draft.heroLines, line2Before: input.target.value } })} className={fieldClass} />
         </Field>
-        <Field label="第二行强调">
+        <Field label="第二行，强调色的字">
           <input value={draft.heroLines.line2Mark} onChange={(input) => onChange({ ...draft, heroLines: { ...draft.heroLines, line2Mark: input.target.value } })} className={fieldClass} />
         </Field>
-        <Field label="第二行后">
+        <Field label="第二行，强调色之后">
           <input value={draft.heroLines.line2After} onChange={(input) => onChange({ ...draft, heroLines: { ...draft.heroLines, line2After: input.target.value } })} className={fieldClass} />
         </Field>
+        <p className="mt-2 text-xs leading-relaxed text-stone-500">第一行和前后两段用主文字色。中间这段用强调色，并从左渐变到结束色。</p>
+        <ColorFields colors={draft.colors} onChange={(colors) => onChange({ ...draft, colors })} />
+      </FormShell>
+    );
+  }
+
+  if (selected === "org") {
+    return (
+      <FormShell title="学校和名称">
+        <HeroNav selected="org" onSelect={onSelect} />
+        <Field label="所属学校或组织">
+          <input value={draft.heroCopy.school} onChange={(input) => onChange(patchHeroCopy(draft, { school: input.target.value }))} className={fieldClass} />
+        </Field>
+        <Field label="可替换标签">
+          <input value={draft.heroCopy.replaceTag} onChange={(input) => onChange(patchHeroCopy(draft, { replaceTag: input.target.value }))} placeholder="留空则不显示" className={fieldClass} />
+        </Field>
+        <Field label="中文名">
+          <input value={draft.name} onChange={(input) => onChange({ ...draft, name: input.target.value })} className={fieldClass} />
+        </Field>
+        <Field label="英文名">
+          <input value={draft.enName} onChange={(input) => onChange({ ...draft, enName: input.target.value })} className={fieldClass} />
+        </Field>
+        <Field label="语言">
+          <input value={draft.heroCopy.langLine} onChange={(input) => onChange(patchHeroCopy(draft, { langLine: input.target.value }))} className={fieldClass} />
+        </Field>
+        <p className="mt-2 text-xs leading-relaxed text-stone-500">中文名用主文字色，英文名用强调色。学校和语言行用辅助文字色。页头的标志仍在「标志和名称」里改。</p>
+        <ColorFields colors={draft.colors} onChange={(colors) => onChange({ ...draft, colors })} />
+      </FormShell>
+    );
+  }
+
+  if (selected === "cta") {
+    return (
+      <FormShell title="报名按钮">
+        <HeroNav selected="cta" onSelect={onSelect} />
+        <Field label="主按钮">
+          <input value={draft.heroCopy.signupEvent} onChange={(input) => onChange(patchHeroCopy(draft, { signupEvent: input.target.value }))} className={fieldClass} />
+        </Field>
+        <Field label="次按钮">
+          <input value={draft.heroCopy.learnMore} onChange={(input) => onChange(patchHeroCopy(draft, { learnMore: input.target.value }))} className={fieldClass} />
+        </Field>
+        <Field label="页头报名">
+          <input value={draft.heroCopy.signup} onChange={(input) => onChange(patchHeroCopy(draft, { signup: input.target.value }))} className={fieldClass} />
+        </Field>
+        <p className="mt-2 text-xs leading-relaxed text-stone-500">页头按钮和活动详情里的报名按钮共用「页头报名」这句。跳转链接仍在加入我们里的报名表格。</p>
       </FormShell>
     );
   }
@@ -326,8 +376,23 @@ function EditorForm({
 
   return (
     <FormShell title="编辑">
-      <p className="text-sm leading-relaxed text-stone-600">点预览里的主张、关于、一盒桌游、一张活动卡，或加入我们这段文字。</p>
+      <p className="text-sm leading-relaxed text-stone-600">点预览里的主标题、学校和名称、介绍、报名按钮、关于、一盒桌游、一张活动卡，或加入我们这段文字。</p>
       <div className="mt-4 flex flex-wrap gap-2">
+        <button type="button" className={quietClass} onClick={() => onSelect("hero")}>
+          主标题和颜色
+        </button>
+        <button type="button" className={quietClass} onClick={() => onSelect("org")}>
+          学校和名称
+        </button>
+        <button type="button" className={quietClass} onClick={() => onSelect("claim")}>
+          首屏介绍
+        </button>
+        <button type="button" className={quietClass} onClick={() => onSelect("cta")}>
+          报名按钮
+        </button>
+        <button type="button" className={quietClass} onClick={() => onSelect("brand")}>
+          标志和名称
+        </button>
         <button type="button" className={quietClass} onClick={() => ask("要新增一盒桌游吗？", () => insertGame(onChange, onSelect))}>
           加一盒桌游
         </button>
@@ -563,6 +628,78 @@ function LinkFields({
         </fieldset>
       ))}
     </>
+  );
+}
+
+function HeroNav({ selected, onSelect }: { selected: string; onSelect: (id: string) => void }) {
+  const items = [
+    ["hero", "主标题"],
+    ["org", "学校和名称"],
+    ["claim", "介绍"],
+    ["cta", "按钮"],
+  ] as const;
+  return (
+    <div className="mt-3 flex flex-wrap gap-2">
+      {items.map(([id, label]) => (
+        <button
+          key={id}
+          type="button"
+          onClick={() => onSelect(id)}
+          className={`rounded-full px-3 py-1 text-xs font-bold ${selected === id ? "bg-stone-900 text-white" : "border border-stone-300"}`}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function patchHeroCopy(draft: SiteDraft, patch: Partial<SiteHeroCopy>): SiteDraft {
+  return { ...draft, heroCopy: { ...draft.heroCopy, ...patch } };
+}
+
+function ColorFields({ colors, onChange }: { colors: SiteColors; onChange: (next: SiteColors) => void }) {
+  return (
+    <fieldset className="mt-4 rounded-2xl border border-stone-200 p-3">
+      <legend className="px-1 text-xs font-bold text-stone-500">颜色</legend>
+      <ColorField label="主文字" hint="标题和中文名" value={colors.text} fallback={fallbackColors.text} onChange={(text) => onChange({ ...colors, text })} />
+      <ColorField label="强调" hint="英文名，以及标题里强调词的起始色" value={colors.accent} fallback={fallbackColors.accent} onChange={(accent) => onChange({ ...colors, accent })} />
+      <ColorField label="强调渐变" hint="强调词从左到右的结束色" value={colors.accentEnd} fallback={fallbackColors.accentEnd} onChange={(accentEnd) => onChange({ ...colors, accentEnd })} />
+      <ColorField label="说明文字" hint="标题下的介绍段落" value={colors.body} fallback={fallbackColors.body} onChange={(body) => onChange({ ...colors, body })} />
+      <ColorField label="辅助文字" hint="学校和语言行" value={colors.meta} fallback={fallbackColors.meta} onChange={(meta) => onChange({ ...colors, meta })} />
+      <p className="mt-3 text-xs leading-relaxed text-stone-500">用 #RRGGBB。保存后公开页立刻用这组颜色，不用重新部署。</p>
+    </fieldset>
+  );
+}
+
+function ColorField({
+  label,
+  hint,
+  value,
+  fallback,
+  onChange,
+}: {
+  label: string;
+  hint: string;
+  value: string;
+  fallback: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="mt-3 block text-sm font-bold">
+      {label}
+      <span className="mt-0.5 block text-xs font-normal text-stone-500">{hint}</span>
+      <span className="mt-1 flex items-center gap-2">
+        <input
+          type="color"
+          value={cssColor(value, fallback)}
+          onChange={(input) => onChange(input.target.value)}
+          className="h-11 w-14 cursor-pointer rounded-lg border border-stone-300 bg-white p-1"
+          aria-label={label}
+        />
+        <input value={value} onChange={(input) => onChange(input.target.value)} spellCheck={false} className={`${fieldClass} mt-0 font-mono`} />
+      </span>
+    </label>
   );
 }
 

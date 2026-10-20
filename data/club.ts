@@ -1,3 +1,4 @@
+import { fallbackColors } from "@/lib/color";
 import aboutDoc from "@/content/about.json";
 import articlesDoc from "@/content/articles.json";
 import contactDoc from "@/content/contact.json";
@@ -55,6 +56,8 @@ export type ClubEvent = {
   startsAt?: string;
   sessions: ClubSession[];
 };
+
+export const clubColors = fallbackColors;
 
 const ui = {
   navHome: "首页",
@@ -286,6 +289,7 @@ export const clubContent = {
   borrowRules:
     "一款一盒。最长 7 天（占位，可替换）。押金待定（可替换）。提交后只在这一层显示已收到，等待社团审核，不会写入后台。联系 WhatsApp +852 6462 3779，微信 Aroma3779。",
   footer: "2026馨香桌游社",
+  colors: clubColors,
   topics: [
     "你最近一次笑出声，是因为什么？",
     "如果今晚只能带一盒游戏，你会带哪一盒？",
@@ -462,6 +466,11 @@ const editableUiKeys = [
   "newsTitle",
   "newsAside",
   "joinTitle",
+  "replace",
+  "langLine",
+  "signup",
+  "signupEvent",
+  "learnMore",
 ] as const;
 
 export function presentClub(content: ClubContent, lang: Lang): ClubContent {
@@ -479,7 +488,7 @@ export function presentClub(content: ClubContent, lang: Lang): ClubContent {
       line2Before: content.hero.line2Before === seedHero.line2Before ? "people who want to " : content.hero.line2Before,
       line2Mark: content.hero.line2Mark === seedHero.line2Mark ? "enjoy life" : content.hero.line2Mark,
       line2After: content.hero.line2After === seedHero.line2After ? "" : content.hero.line2After,
-      school: "School or organisation",
+      school: content.hero.school === seedHero.school ? "School or organisation" : content.hero.school,
       intro: content.hero.intro,
     },
     welcome: content.welcome,
