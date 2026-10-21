@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
+import GoogleFormsPanel, { type GoogleNotice } from "@/components/admin/GoogleFormsPanel";
 import VisitPanel from "@/components/admin/VisitPanel";
 import ClubHome from "@/components/club/ClubHome";
 import LogoutButton from "@/components/LogoutButton";
@@ -9,6 +10,7 @@ import { clubContent } from "@/data/club";
 import { applySiteDraft, type SiteColors, type SiteDraft, type SiteEventDraft, type SiteGameDraft, type SiteHeroCopy } from "@/data/siteDraft";
 import type { ChromeKey } from "@/data/uiChrome";
 import { cssColor, fallbackColors } from "@/lib/color";
+import { mergeFirstSessionSigned, parseGoogleFormId } from "@/lib/formSync";
 import type { VisitSummary } from "@/lib/visitMath";
 
 const fieldClass = "mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900";
@@ -25,7 +27,17 @@ function localStart(iso: string) {
   return match?.[1] ?? "";
 }
 
-export default function SiteEditor({ initial, visits }: { initial: SiteDraft; visits: VisitSummary }) {
+export default function SiteEditor({
+  initial,
+  visits,
+  googleConnected,
+  googleMessages,
+}: {
+  initial: SiteDraft;
+  visits: VisitSummary;
+  googleConnected: boolean;
+  googleMessages: GoogleNotice[];
+}) {
   const [draft, setDraft] = useState(initial);
   const [selected, setSelected] = useState<string | null>(null);
   const [pane, setPane] = useState<"preview" | "edit">("preview");
@@ -88,6 +100,11 @@ export default function SiteEditor({ initial, visits }: { initial: SiteDraft; vi
         </div>
       </header>
       <VisitPanel visits={visits} />
+      <GoogleFormsPanel
+        connected={googleConnected}
+        messages={googleMessages}
+        onSynced={(updates) => setDraft((current) => ({ ...current, events: mergeFirstSessionSigned(current.events, updates) }))}
+      />
       <div className="flex min-h-0 flex-1">
         <div className={`min-w-0 flex-1 overflow-y-auto [transform:translateZ(0)] ${pane === "edit" ? "max-lg:hidden" : ""}`}>
           <ClubHome content={content} lang="zh" editMode selected={selected} onSelect={choose} onLibraryAdd={() => ask("要新增一盒桌游吗？", () => insertGame(setDraft, choose))} />
@@ -535,7 +552,7 @@ function EditorForm({
   if (event) {
     return (
       <FormShell title={event.title || "活动"}>
-        <EventFields event={event} onChange={(next) => onChange({ ...draft, events: draft.events.map((item) => (item.id === event.id ? next : item)) })} />
+        <EventFields key={event.id} event={event} onChange={(next) => onChange({ ...draft, events: draft.events.map((item) => (item.id === event.id ? next : item)) })} />
         <div className="mt-5 flex flex-wrap gap-2">
           <button type="button" className={quietClass} onClick={() => ask("要新增一场活动吗？", () => insertEvent(onChange, onSelect))}>
             加一场
@@ -626,6 +643,7 @@ function insertEvent(onChange: (next: SiteDraft | ((current: SiteDraft) => SiteD
         emoji: "🎲",
         coverUrl: "",
         signupUrl: "",
+        formId: "",
         sessions: [{ name: "场次", signed: 0, capacity: 8 }],
       },
     ],
@@ -678,6 +696,33 @@ function GameFields({ game, onChange }: { game: SiteGameDraft; onChange: (next: 
 }
 
 function EventFields({ event, onChange }: { event: SiteEventDraft; onChange: (next: SiteEventDraft) => void }) {
+  const [formHint, setFormHint] = useState("");
+
+  function updateFormId(raw: string) {
+    const trimmed = raw.trim();
+    if (!trimmed) {
+      setFormHint("");
+      onChange({ ...event, formId: "" });
+      return;
+    }
+    const parsed = parseGoogleFormId(trimmed);
+    if (parsed) {
+      setFormHint(parsed === trimmed ? "" : "已读出表单编号。先保存，再同步。");
+      onChange({ ...event, formId: parsed });
+      return;
+    }
+    if (/\/forms\/d\/e\//i.test(trimmed) || /viewform/i.test(trimmed)) {
+      setFormHint("这是公开报名链接。同步请粘贴编辑链接，形如 …/forms/d/编号/edit。");
+      return;
+    }
+    if (/https?:|docs\.google|\/forms\//i.test(trimmed)) {
+      setFormHint("没能从这段链接里读出表单编号。请粘贴编辑链接。");
+      return;
+    }
+    setFormHint("");
+    onChange({ ...event, formId: trimmed.replace(/\s+/g, "").slice(0, 128) });
+  }
+
   return (
     <>
       <Field label="归属">
@@ -714,6 +759,20 @@ function EventFields({ event, onChange }: { event: SiteEventDraft; onChange: (ne
       <Field label="报名链接">
         <input value={event.signupUrl} onChange={(input) => onChange({ ...event, signupUrl: input.target.value })} placeholder="只用于这场详细资料里的立即报名" className={fieldClass} />
       </Field>
+      <Field label="同步用的表单编号">
+        <input
+          id="sync-form-id"
+          value={event.formId}
+          onChange={(input) => updateFormId(input.target.value)}
+          placeholder="表单编号，或粘贴 …/forms/d/编号/edit"
+          spellCheck={false}
+          className={fieldClass}
+        />
+      </Field>
+      <p className="mt-1 text-xs leading-relaxed text-stone-500">
+        用来把 Google 表单的回复数写入第一场的已报。请填编辑编号，或粘贴编辑链接。这不是给访客看的报名链接。留空则这场继续用手填人数。改完请先保存，再点「同步报名人数」。
+      </p>
+      {formHint ? <p className="mt-1 text-xs font-bold text-amber-700">{formHint}</p> : null}
       <Field label="摘要">
         <textarea rows={3} value={event.summary} onChange={(input) => onChange({ ...event, summary: input.target.value })} className={fieldClass} />
       </Field>
@@ -765,6 +824,11 @@ function EventFields({ event, onChange }: { event: SiteEventDraft; onChange: (ne
               />
             </Field>
           </div>
+          {index === 0 && parseGoogleFormId(event.formId) ? (
+            <p className="mt-1 text-xs leading-relaxed text-stone-500">
+              {event.sessions.length > 1 ? "同步时，回复数只写入这一场的已报。后面的场次仍用手填。" : "同步时，回复数会写入这里的已报。"}
+            </p>
+          ) : null}
           <button
             type="button"
             className={`${quietClass} mt-3`}
