@@ -8,9 +8,11 @@ import {
   googleConsentUrl,
   googleRedirectUri,
   grantedScopesAcceptable,
+  eventUsesForm,
   mergeFirstSessionSigned,
   parseGoogleFormId,
   readResponsePage,
+  selectEventsForFormSync,
   GOOGLE_FORMS_SCOPES,
 } from "./formSync.ts";
 import { isRefreshSeal, openRefreshToken, sealRefreshToken } from "./googleSeal.ts";
@@ -109,6 +111,27 @@ test("admin redirects stay on the browser host", () => {
     },
   };
   assert.equal(adminReturnUrl(forwarded, "connected").href, "https://aroma-board-game-club.vercel.app/admin?google=connected");
+});
+
+test("a form id selects that event, and a blank id keeps every linked event", () => {
+  const events = [
+    { id: "night", formId: EDIT_ID },
+    { id: "day", formId: `https://docs.google.com/forms/d/${EDIT_ID}/edit` },
+    { id: "other", formId: "1OtherFormIdExample0000001" },
+    { id: "blank", formId: "  " },
+  ];
+  assert.equal(eventUsesForm(EDIT_ID, EDIT_URL), true);
+  assert.equal(eventUsesForm(EDIT_URL, EDIT_ID), true);
+  assert.equal(eventUsesForm(EDIT_ID, "1OtherFormIdExample0000001"), false);
+  assert.equal(eventUsesForm(EDIT_ID, `https://docs.google.com/forms/d/e/${EDIT_ID}/viewform`), false);
+  assert.equal(eventUsesForm("", EDIT_ID), false);
+  assert.equal(eventUsesForm(EDIT_ID, "  "), false);
+
+  const matched = selectEventsForFormSync(events, EDIT_URL);
+  assert.deepEqual(matched.map((event) => event.id), ["night", "day"]);
+  const all = selectEventsForFormSync(events, "  ");
+  assert.deepEqual(all.map((event) => event.id), ["night", "day", "other"]);
+  assert.deepEqual(selectEventsForFormSync(events).map((event) => event.id), ["night", "day", "other"]);
 });
 
 test("a sealed refresh token round-trips and is not stored in plaintext", () => {
