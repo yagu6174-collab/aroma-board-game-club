@@ -5,16 +5,22 @@ import {
   applyResponseCount,
   canonicalFormId,
   adminReturnUrl,
+  classifyOAuthRedirectError,
+  classifyTokenExchange,
+  disconnectedSyncNotices,
   googleConsentUrl,
   googleRedirectUri,
   grantedScopesAcceptable,
   eventUsesForm,
   mergeFirstSessionSigned,
+  mergeGoogleNotices,
+  oauthNotice,
   parseGoogleFormId,
   readResponsePage,
   selectEventsForFormSync,
   GOOGLE_FORMS_SCOPES,
 } from "./formSync.ts";
+import { createOAuthState, oauthStateMatchesSession } from "./googleState.ts";
 import { isRefreshSeal, openRefreshToken, sealRefreshToken } from "./googleSeal.ts";
 
 const EDIT_ID = "1bZ7formEditIdExample0001";
@@ -87,7 +93,13 @@ test("consent asks only for the readonly Forms scopes", () => {
   assert.equal(url.searchParams.get("redirect_uri"), DEFAULT_GOOGLE_REDIRECT_URI);
   assert.equal(url.toString().includes("auth/drive"), false);
   assert.equal(grantedScopesAcceptable(GOOGLE_FORMS_SCOPES.join(" ")), true);
+  assert.equal(grantedScopesAcceptable(`${GOOGLE_FORMS_SCOPES.join(" ")} openid email profile`), true);
+  assert.equal(
+    grantedScopesAcceptable(`${GOOGLE_FORMS_SCOPES.join(" ")} https://www.googleapis.com/auth/userinfo.email`),
+    true,
+  );
   assert.equal(grantedScopesAcceptable(`${GOOGLE_FORMS_SCOPES[0]} https://www.googleapis.com/auth/drive`), false);
+  assert.equal(grantedScopesAcceptable(`${GOOGLE_FORMS_SCOPES.join(" ")} https://www.googleapis.com/auth/forms.body`), false);
   assert.equal(grantedScopesAcceptable(GOOGLE_FORMS_SCOPES[1]), false);
   assert.equal(googleRedirectUri(""), DEFAULT_GOOGLE_REDIRECT_URI);
   assert.equal(googleRedirectUri(" https://example.com/api/google/callback "), "https://example.com/api/google/callback");
@@ -132,6 +144,88 @@ test("a form id selects that event, and a blank id keeps every linked event", ()
   const all = selectEventsForFormSync(events, "  ");
   assert.deepEqual(all.map((event) => event.id), ["night", "day", "other"]);
   assert.deepEqual(selectEventsForFormSync(events).map((event) => event.id), ["night", "day", "other"]);
+});
+
+test("oauth state is bound to the admin session and does not embed it", () => {
+  const secret = "local-test-secret";
+  const session = "1793155597409.session-mac-value";
+  const state = createOAuthState(session, secret, "noncevalue");
+  assert.equal(state.includes(session), false);
+  assert.equal(oauthStateMatchesSession(state, session, ` ${secret} `), true);
+  assert.equal(oauthStateMatchesSession(state, "other-session", secret), false);
+  assert.equal(oauthStateMatchesSession(state, session, "other-secret"), false);
+  assert.equal(oauthStateMatchesSession("noncevalue.not-the-mac", session, secret), false);
+  assert.equal(oauthStateMatchesSession("", session, secret), false);
+});
+
+test("token exchange and redirect errors get distinct google codes", () => {
+  const forms = GOOGLE_FORMS_SCOPES.join(" ");
+  assert.equal(classifyTokenExchange({ ok: true, refreshToken: "1//refresh", scope: forms }), "connected");
+  assert.equal(classifyTokenExchange({ ok: true, refreshToken: "1//refresh", scope: `${forms} openid` }), "connected");
+  assert.equal(classifyTokenExchange({ ok: true, refreshToken: "1//refresh", scope: "" }), "connected");
+  assert.equal(classifyTokenExchange({ ok: true, refreshToken: "", scope: forms }), "norefresh");
+  assert.equal(
+    classifyTokenExchange({ ok: true, refreshToken: "1//refresh", scope: `${forms} https://www.googleapis.com/auth/drive` }),
+    "scope",
+  );
+  assert.equal(classifyTokenExchange({ ok: false, error: "invalid_client" }), "invalid_client");
+  assert.equal(classifyTokenExchange({ ok: false, error: "unauthorized_client" }), "invalid_client");
+  assert.equal(classifyTokenExchange({ ok: false, error: "redirect_uri_mismatch" }), "redirect_uri");
+  assert.equal(classifyTokenExchange({ ok: false, error: "invalid_grant" }), "invalid_grant");
+  assert.equal(classifyTokenExchange({ ok: false, error: "something_else" }), "token");
+  assert.equal(classifyTokenExchange({ ok: false }), "token");
+  assert.equal(classifyTokenExchange({ ok: true, refreshToken: "1//refresh", timedOut: true }), "timeout");
+  assert.equal(classifyOAuthRedirectError("access_denied"), "denied");
+  assert.equal(classifyOAuthRedirectError("invalid_scope"), "scope");
+  assert.equal(classifyOAuthRedirectError("login_required"), "nologin");
+  assert.equal(classifyOAuthRedirectError("not a real code <script>"), "token");
+  assert.equal(classifyOAuthRedirectError(""), null);
+  assert.equal(classifyOAuthRedirectError(null), null);
+});
+
+test("each google code has its own Chinese notice", () => {
+  const codes = [
+    "connected",
+    "denied",
+    "config",
+    "nologin",
+    "state",
+    "scope",
+    "save",
+    "norefresh",
+    "invalid_client",
+    "redirect_uri",
+    "invalid_grant",
+    "timeout",
+    "token",
+  ];
+  const texts = new Set<string>();
+  for (const code of codes) {
+    const notice = oauthNotice(code);
+    assert.ok(notice);
+    assert.equal(notice.warn, code !== "connected");
+    assert.equal(texts.has(notice.text), false);
+    texts.add(notice.text);
+    assert.equal(/ya29\.|refresh_token|1\/\//i.test(notice.text), false);
+  }
+  assert.equal(oauthNotice("connected")?.text, "已连接 Google 表单。");
+  assert.equal(oauthNotice(undefined), null);
+  assert.equal(oauthNotice("nope"), null);
+});
+
+test("a disconnected sync names the missing connection before the empty form id", () => {
+  const both = disconnectedSyncNotices({ configured: true, formCount: 0, reportEmpty: true });
+  assert.equal(both[0]?.text.includes("未连接"), true);
+  assert.equal(both[1]?.text.includes("表单编号"), true);
+  assert.equal(disconnectedSyncNotices({ configured: true, formCount: 2, reportEmpty: true })[0]?.text.includes("未连接"), true);
+  assert.equal(disconnectedSyncNotices({ configured: true, formCount: 0, reportEmpty: false }).length, 0);
+  assert.equal(disconnectedSyncNotices({ configured: false, formCount: 1, reportEmpty: true })[0]?.text.includes("没配置"), true);
+
+  const failure = oauthNotice("invalid_client");
+  assert.ok(failure);
+  const merged = mergeGoogleNotices([failure], disconnectedSyncNotices({ configured: true, formCount: 0, reportEmpty: true }));
+  assert.equal(merged[0]?.text, failure.text);
+  assert.equal(merged.some((item) => item.text.includes("表单编号")), true);
 });
 
 test("a sealed refresh token round-trips and is not stored in plaintext", () => {
