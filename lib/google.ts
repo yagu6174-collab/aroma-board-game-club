@@ -3,25 +3,25 @@ import "server-only";
 // Refresh tokens are sealed with SESSION_SECRET and written through the same
 // store as the site draft (Vercel Blob when BLOB_READ_WRITE_TOKEN is set,
 // otherwise .data/). The blob store is public, so the file holds ciphertext only.
-import { createHmac, randomBytes, timingSafeEqual } from "crypto";
-import { cookies } from "next/headers";
-import { NextResponse } from "next/server";
+import { randomBytes } from "crypto";
 import {
   applyResponseCount,
+  classifyTokenExchange,
+  disconnectedSyncNotices,
   googleConsentUrl,
   googleRedirectUri,
-  grantedScopesAcceptable,
   mergeFirstSessionSigned,
   parseGoogleFormId,
   readResponsePage,
 } from "@/lib/formSync";
+import { createOAuthState, oauthStateMatchesSession } from "@/lib/googleState";
 import { isRefreshSeal, openRefreshToken, sealRefreshToken } from "@/lib/googleSeal";
 import { readSiteDraft, saveSiteDraft } from "@/lib/site";
 import { readStored, writeStored } from "@/lib/store";
 import type { SiteEventDraft } from "@/data/siteDraft";
 
 const KEY = "google-forms";
-const STATE_COOKIE = "google_oauth_state";
+const LEGACY_STATE_COOKIE = "google_oauth_state";
 
 export type GoogleNotice = { text: string; warn: boolean };
 export type GoogleSyncResult = {
@@ -71,59 +71,29 @@ export function googleConfigured() {
   return Boolean(clientId() && clientSecret() && sessionSecret());
 }
 
-function stateCookie() {
-  return {
-    httpOnly: true,
-    sameSite: "lax" as const,
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: 60 * 10,
-  };
+export function issueOAuthState(sessionToken: string) {
+  return createOAuthState(sessionToken, sessionSecret(), randomBytes(16).toString("base64url"));
 }
 
-function signNonce(nonce: string) {
-  return createHmac("sha256", sessionSecret()).update(nonce).digest("base64url");
-}
-
-function safeEqual(left: string, right: string) {
-  const a = Buffer.from(left);
-  const b = Buffer.from(right);
-  if (a.length !== b.length) return false;
-  return timingSafeEqual(a, b);
-}
-
-export function issueOAuthState() {
-  const nonce = randomBytes(16).toString("base64url");
-  return `${nonce}.${signNonce(nonce)}`;
-}
-
-export function oauthStateValid(state: string) {
-  if (!sessionSecret()) return false;
-  const split = state.lastIndexOf(".");
-  if (split <= 0) return false;
-  const nonce = state.slice(0, split);
-  const mac = state.slice(split + 1);
-  return safeEqual(mac, signNonce(nonce));
+export function oauthStateAccepts(state: string, sessionToken: string) {
+  return oauthStateMatchesSession(state, sessionToken, sessionSecret());
 }
 
 export function consentUrlFor(state: string) {
   return googleConsentUrl({ clientId: clientId(), redirectUri: googleRedirectUri(), state });
 }
 
-export function rememberOAuthState(response: NextResponse, state: string) {
-  response.cookies.set(STATE_COOKIE, state, stateCookie());
-  return response;
-}
-
-export function forgetOAuthState(response: NextResponse) {
-  response.cookies.set(STATE_COOKIE, "", { ...stateCookie(), maxAge: 0 });
-  return response;
-}
-
-export async function oauthStateMatches(state: string) {
-  const jar = await cookies();
-  const saved = jar.get(STATE_COOKIE)?.value ?? "";
-  return Boolean(saved && state) && safeEqual(saved, state) && oauthStateValid(state);
+export function legacyStateCookieClear() {
+  return {
+    name: LEGACY_STATE_COOKIE,
+    options: {
+      httpOnly: true,
+      sameSite: "lax" as const,
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: 0,
+    },
+  };
 }
 
 async function writeSeal(token: string) {
@@ -170,27 +140,46 @@ async function postToken(body: URLSearchParams, signal: AbortSignal) {
   return { ok: res.ok, json };
 }
 
+function scopeList(value: unknown) {
+  if (typeof value === "string") return value;
+  if (Array.isArray(value) && value.every((item) => typeof item === "string")) return value.join(" ");
+  return "";
+}
+
+function isTimeout(err: unknown) {
+  return err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError");
+}
+
 export async function exchangeGoogleCode(code: string) {
   const signal = AbortSignal.timeout(8000);
-  const { ok, json } = await postToken(
-    new URLSearchParams({
-      code,
-      client_id: clientId(),
-      client_secret: clientSecret(),
-      redirect_uri: googleRedirectUri(),
-      grant_type: "authorization_code",
-    }),
-    signal,
-  );
-  const refreshToken = typeof json?.refresh_token === "string" ? json.refresh_token : "";
-  const scope = typeof json?.scope === "string" ? json.scope : "";
-  if (!ok || !refreshToken) return false;
-  if (scope && !grantedScopesAcceptable(scope)) {
-    console.error("google oauth scopes rejected");
-    return false;
+  try {
+    const { ok, json } = await postToken(
+      new URLSearchParams({
+        code,
+        client_id: clientId(),
+        client_secret: clientSecret(),
+        redirect_uri: googleRedirectUri(),
+        grant_type: "authorization_code",
+      }),
+      signal,
+    );
+    const refreshToken = typeof json?.refresh_token === "string" ? json.refresh_token : "";
+    const result = classifyTokenExchange({
+      ok,
+      error: typeof json?.error === "string" ? json.error : "",
+      refreshToken,
+      scope: scopeList(json?.scope),
+    });
+    if (result !== "connected") return result;
+    try {
+      await saveGoogleRefreshToken(refreshToken);
+    } catch {
+      return "save";
+    }
+    return "connected";
+  } catch (err) {
+    return isTimeout(err) ? "timeout" : "token";
   }
-  await saveGoogleRefreshToken(refreshToken);
-  return true;
 }
 
 async function refreshAccessToken(refreshToken: string, signal: AbortSignal) {
@@ -261,10 +250,11 @@ async function syncBody(reportEmpty: boolean): Promise<GoogleSyncResult> {
     return { connected: false, updates: [], messages: [warn("已保存的 Google 连接读不出来，请重新连接。人数保持原数字。")] };
   }
   if (!loaded.refreshToken) {
-    if (!pending.length && !reportEmpty) return { connected: false, updates: [], messages: [] };
-    const text = googleConfigured() ? "Google 未连接，报名人数保持原数字。" : "Google 客户端还没配置，人数保持原数字。";
-    if (!pending.length) return { connected: false, updates: [], messages: [warn("还没有填写同步用的表单编号，人数保持原数字。")] };
-    return { connected: false, updates: [], messages: [warn(text)] };
+    return {
+      connected: false,
+      updates: [],
+      messages: disconnectedSyncNotices({ configured: googleConfigured(), formCount: pending.length, reportEmpty }),
+    };
   }
   if (!googleConfigured()) {
     return { connected: true, updates: [], messages: [warn("Google 客户端还没配置，人数保持原数字。")] };
@@ -333,10 +323,4 @@ export function syncFormCounts(options: { reportEmpty: boolean }) {
   return exclusive(() => syncBody(options.reportEmpty));
 }
 
-export function oauthNotice(code: string | undefined): GoogleNotice | null {
-  if (code === "connected") return note("已连接 Google 表单。");
-  if (code === "denied") return warn("没有完成授权，报名人数保持原数字。");
-  if (code === "error") return warn("连接 Google 失败，请再试一次。");
-  if (code === "config") return warn("服务器还没有配好 Google 客户端。");
-  return null;
-}
+export { oauthNotice } from "@/lib/formSync";
