@@ -14,6 +14,7 @@ import {
   mergeFirstSessionSigned,
   parseGoogleFormId,
   readResponsePage,
+  selectEventsForFormSync,
 } from "@/lib/formSync";
 import { isRefreshSeal, openRefreshToken, sealRefreshToken } from "@/lib/googleSeal";
 import { readSiteDraft, saveSiteDraft } from "@/lib/site";
@@ -253,15 +254,25 @@ function countFailure(event: SiteEventDraft, error: unknown) {
   return warn(`「${title}」暂时读不到回复，人数保持原数字。`);
 }
 
-async function syncBody(reportEmpty: boolean): Promise<GoogleSyncResult> {
+type SyncOptions = { reportEmpty: boolean; formId?: string };
+
+async function syncBody(options: SyncOptions): Promise<GoogleSyncResult> {
   const draft = await readSiteDraft();
-  const pending = draft.events.filter((event) => event.formId.trim());
+  const requestedFormId = options.formId?.trim() ?? "";
+  const pending = selectEventsForFormSync(draft.events, requestedFormId);
   const loaded = await loadRefreshToken();
+  if (requestedFormId && !pending.length) {
+    return {
+      connected: !loaded.unreadable && Boolean(loaded.refreshToken),
+      updates: [],
+      messages: [warn("没有活动使用这张表单，人数保持原数字。")],
+    };
+  }
   if (loaded.unreadable) {
     return { connected: false, updates: [], messages: [warn("已保存的 Google 连接读不出来，请重新连接。人数保持原数字。")] };
   }
   if (!loaded.refreshToken) {
-    if (!pending.length && !reportEmpty) return { connected: false, updates: [], messages: [] };
+    if (!pending.length && !options.reportEmpty) return { connected: false, updates: [], messages: [] };
     const text = googleConfigured() ? "Google 未连接，报名人数保持原数字。" : "Google 客户端还没配置，人数保持原数字。";
     if (!pending.length) return { connected: false, updates: [], messages: [warn("还没有填写同步用的表单编号，人数保持原数字。")] };
     return { connected: false, updates: [], messages: [warn(text)] };
@@ -273,7 +284,7 @@ async function syncBody(reportEmpty: boolean): Promise<GoogleSyncResult> {
     return {
       connected: true,
       updates: [],
-      messages: reportEmpty ? [warn("还没有填写同步用的表单编号，人数保持原数字。")] : [],
+      messages: options.reportEmpty ? [warn("还没有填写同步用的表单编号，人数保持原数字。")] : [],
     };
   }
 
@@ -329,8 +340,8 @@ async function syncBody(reportEmpty: boolean): Promise<GoogleSyncResult> {
   return { connected: true, updates, messages };
 }
 
-export function syncFormCounts(options: { reportEmpty: boolean }) {
-  return exclusive(() => syncBody(options.reportEmpty));
+export function syncFormCounts(options: SyncOptions) {
+  return exclusive(() => syncBody(options));
 }
 
 export function oauthNotice(code: string | undefined): GoogleNotice | null {

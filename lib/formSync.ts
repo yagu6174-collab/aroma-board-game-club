@@ -74,6 +74,28 @@ export function canonicalFormId(input: string) {
   return trimmed.replace(/\s+/g, "").slice(0, 128);
 }
 
+// A stored edit id, a bare id, and an edit URL all name the same form.
+// A blank request is not a match; callers sync every linked event in that case.
+export function eventUsesForm(storedFormId: string, requested: string) {
+  const stored = storedFormId.trim();
+  const wanted = requested.trim();
+  if (!stored || !wanted) return false;
+  if (stored === wanted) return true;
+  const storedId = parseGoogleFormId(stored);
+  const wantedId = parseGoogleFormId(wanted);
+  if (wantedId && storedId) return storedId === wantedId;
+  if (wantedId && stored === wantedId) return true;
+  if (storedId && wanted === storedId) return true;
+  return false;
+}
+
+export function selectEventsForFormSync<T extends { formId: string }>(events: readonly T[], formId?: string) {
+  const linked = events.filter((event) => event.formId.trim());
+  const wanted = formId?.trim() ?? "";
+  if (!wanted) return linked;
+  return linked.filter((event) => eventUsesForm(event.formId, wanted));
+}
+
 export function readResponsePage(body: unknown) {
   const raw = body && typeof body === "object" ? (body as Record<string, unknown>) : {};
   const count = Array.isArray(raw.responses) ? raw.responses.length : 0;
