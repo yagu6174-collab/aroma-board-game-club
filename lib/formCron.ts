@@ -1,9 +1,11 @@
-// Auth for the hourly enrollment cron. Vercel calls GET with Authorization: Bearer CRON_SECRET.
+// Auth for the daily enrollment cron. Vercel calls GET with Authorization: Bearer CRON_SECRET.
+// Hobby accounts can schedule a cron only once per day; an hourly schedule needs Pro.
 // The admin session is not consulted, and the Apps Script hook secret is not accepted here.
 import { createHash, timingSafeEqual } from "crypto";
 
 export const FORM_CRON_PATH = "/api/google/cron";
-export const FORM_CRON_SCHEDULE = "0 * * * *";
+// 00:00 UTC is 08:00 Asia/Hong_Kong. Once a day so Hobby production deploys are accepted.
+export const FORM_CRON_SCHEDULE = "0 0 * * *";
 
 const MAX_SECRET = 256;
 

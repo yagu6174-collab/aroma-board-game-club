@@ -63,10 +63,11 @@ test("a bad secret does not sync, and a good secret refreshes every linked form 
   assert.equal(calls.length, 1);
 });
 
-test("vercel.json schedules the cron hourly and the route stays on the shared sync path", () => {
+test("vercel.json schedules the cron once a day and the route stays on the shared sync path", () => {
   const config = JSON.parse(readFileSync(new URL("../vercel.json", import.meta.url), "utf8")) as {
     crons?: { path: string; schedule: string }[];
   };
+  assert.equal(FORM_CRON_SCHEDULE, "0 0 * * *");
   assert.deepEqual(config.crons, [{ path: FORM_CRON_PATH, schedule: FORM_CRON_SCHEDULE }]);
 
   const route = readFileSync(new URL("../app/api/google/cron/route.ts", import.meta.url), "utf8");
