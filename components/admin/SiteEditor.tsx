@@ -78,7 +78,7 @@ export default function SiteEditor({
 
   return (
     <div className="flex h-dvh flex-col bg-stone-100 text-stone-900">
-      <header className="flex flex-wrap items-center gap-3 border-b border-stone-200 bg-white px-4 py-3">
+      <header className="flex flex-wrap items-center gap-3 border-b border-stone-200 bg-white px-4 py-3 sm:px-5">
         <p className="text-sm font-black">后台</p>
         <Link href="/zh" className="rounded-full border border-stone-300 px-3 py-1.5 text-sm font-bold text-stone-800">
           回到主页
@@ -99,12 +99,16 @@ export default function SiteEditor({
           <LogoutButton />
         </div>
       </header>
-      <VisitPanel visits={visits} />
-      <GoogleFormsPanel
-        connected={googleConnected}
-        messages={googleMessages}
-        onSynced={(updates) => setDraft((current) => ({ ...current, events: mergeFirstSessionSigned(current.events, updates) }))}
-      />
+      <div className="border-b border-stone-200 bg-stone-100 px-4 py-4 sm:px-5">
+        <div className="grid items-stretch gap-3 lg:grid-cols-2 lg:gap-4">
+          <VisitPanel visits={visits} />
+          <GoogleFormsPanel
+            connected={googleConnected}
+            messages={googleMessages}
+            onSynced={(updates) => setDraft((current) => ({ ...current, events: mergeFirstSessionSigned(current.events, updates) }))}
+          />
+        </div>
+      </div>
       <div className="flex min-h-0 flex-1">
         <div className={`min-w-0 flex-1 overflow-y-auto [transform:translateZ(0)] ${pane === "edit" ? "max-lg:hidden" : ""}`}>
           <ClubHome content={content} lang="zh" editMode selected={selected} onSelect={choose} onLibraryAdd={() => ask("要新增一盒桌游吗？", () => insertGame(setDraft, choose))} />
