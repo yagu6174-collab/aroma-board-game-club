@@ -63,7 +63,7 @@ export default function GoogleFormsPanel({
       </div>
       <div className="mt-4 flex flex-wrap gap-2 border-t border-stone-100 pt-4">
         <form action="/api/google/start" method="get" className="inline">
-          <button id="google-connect" type="submit" className="rounded-full bg-indigo-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-indigo-700">
+          <button id="google-connect" type="submit" className="rounded-full border border-indigo-600 bg-indigo-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-indigo-700">
             {linked ? "重新连接" : "连接 Google 表单"}
           </button>
         </form>
