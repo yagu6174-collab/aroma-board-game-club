@@ -12,6 +12,7 @@ import type { JoinButton, JoinButtonStyle } from "@/lib/joinButtons";
 import type { ChromeKey } from "@/data/uiChrome";
 import { cssColor, fallbackColors } from "@/lib/color";
 import { mergeFirstSessionSigned, parseGoogleFormId } from "@/lib/formSync";
+import { moveByIndex, withOrder } from "@/lib/gameOrder";
 import type { VisitSummary } from "@/lib/visitMath";
 
 const fieldClass = "mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900";
@@ -153,6 +154,23 @@ export default function SiteEditor({
 }
 
 const quietClass = "rounded-full border border-stone-300 px-3 py-1.5 text-xs font-bold";
+const moveClass = `${quietClass} disabled:cursor-not-allowed disabled:opacity-40`;
+
+function shiftGames(draft: SiteDraft, from: number, to: number): SiteDraft {
+  if (!Number.isInteger(from) || !Number.isInteger(to)) return draft;
+  if (from < 0 || to < 0 || from >= draft.games.length || to >= draft.games.length || from === to) return draft;
+  return { ...draft, games: withOrder(moveByIndex(draft.games, from, to)) };
+}
+
+function nudgeGame(draft: SiteDraft, id: string, delta: number): SiteDraft {
+  const from = draft.games.findIndex((game) => game.id === id);
+  return shiftGames(draft, from, from + delta);
+}
+
+function placeGame(draft: SiteDraft, id: string, to: number): SiteDraft {
+  const from = draft.games.findIndex((game) => game.id === id);
+  return shiftGames(draft, from, to);
+}
 
 function EditorForm({
   draft,
@@ -344,6 +362,28 @@ function EditorForm({
             ["teachSoon", "教学即将放上"],
           ]}
         />
+        <button type="button" className={`${quietClass} mt-4`} onClick={() => onSelect("games-order")}>
+          调整货架顺序
+        </button>
+      </FormShell>
+    );
+  }
+
+  if (selected === "games-order") {
+    return (
+      <FormShell title="桌游库顺序">
+        <p className="mt-2 text-sm leading-relaxed text-stone-600">
+          上面的一盒，在主页货架上更靠左。拖左侧手柄，或点上移、下移。手机上用按钮更稳。改完要点右上角保存，公开页才会换顺序。
+        </p>
+        <GameOrderList
+          games={draft.games}
+          onNudge={(id, delta) => onChange((current) => nudgeGame(current, id, delta))}
+          onPlace={(id, to) => onChange((current) => placeGame(current, id, to))}
+          onSelect={onSelect}
+        />
+        <button type="button" className={`${quietClass} mt-4`} onClick={() => ask("要新增一盒桌游吗？", () => insertGame(onChange, onSelect))}>
+          加一盒
+        </button>
       </FormShell>
     );
   }
@@ -548,8 +588,28 @@ function EditorForm({
   }
 
   if (game) {
+    const index = draft.games.findIndex((item) => item.id === game.id);
+    const label = game.name.trim() || "这盒桌游";
     return (
       <FormShell title={game.name || "桌游"}>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <button type="button" className={moveClass} disabled={index <= 0} aria-label={`上移「${label}」`} onClick={() => onChange((current) => nudgeGame(current, game.id, -1))}>
+            上移
+          </button>
+          <button
+            type="button"
+            className={moveClass}
+            disabled={index < 0 || index >= draft.games.length - 1}
+            aria-label={`下移「${label}」`}
+            onClick={() => onChange((current) => nudgeGame(current, game.id, 1))}
+          >
+            下移
+          </button>
+          <button type="button" className={quietClass} onClick={() => onSelect("games-order")}>
+            全部顺序
+          </button>
+          <span className="text-xs text-stone-500">货架从左到右第 {index + 1} 位</span>
+        </div>
         <GameFields game={game} onChange={(next) => onChange({ ...draft, games: draft.games.map((item) => (item.id === game.id ? next : item)) })} />
         <div className="mt-5 flex flex-wrap gap-2">
           <button type="button" className={quietClass} onClick={() => ask("要新增一盒桌游吗？", () => insertGame(onChange, onSelect))}>
@@ -559,8 +619,8 @@ function EditorForm({
             type="button"
             className={quietClass}
             onClick={() =>
-              ask(`要删除「${game.name || "这盒桌游"}」吗？`, () => {
-                onChange({ ...draft, games: draft.games.filter((item) => item.id !== game.id) });
+              ask(`要删除「${label}」吗？`, () => {
+                onChange((current) => ({ ...current, games: withOrder(current.games.filter((item) => item.id !== game.id)) }));
                 onSelect(null);
               })
             }
@@ -614,6 +674,7 @@ function EditorForm({
             ["about", "关于正文"],
             ["about-photo", "社团照片"],
             ["games-copy", "桌游区文字"],
+            ["games-order", "桌游库顺序"],
             ["news-copy", "活动区文字"],
             ["join", "加入我们"],
             ["footer", "页脚"],
@@ -654,7 +715,7 @@ function insertGame(onChange: (next: SiteDraft | ((current: SiteDraft) => SiteDr
   const id = `box-${Date.now()}`;
   onChange((current) => ({
     ...current,
-    games: [...current.games, { id, name: "新桌游", players: "2–6 人", kind: "party", blurb: "", borrowable: false, emoji: "🎲", teachUrl: "", coverUrl: "", showPlay: false, showTeach: true }],
+    games: withOrder([...current.games, { id, name: "新桌游", players: "2–6 人", kind: "party", blurb: "", borrowable: false, emoji: "🎲", teachUrl: "", coverUrl: "", showPlay: false, showTeach: true }]),
   }));
   onSelect(`game:${id}`);
 }
@@ -1136,6 +1197,115 @@ function ColorField({
         </button>
       ) : null}
     </div>
+  );
+}
+
+function GameOrderList({
+  games,
+  onNudge,
+  onPlace,
+  onSelect,
+}: {
+  games: SiteGameDraft[];
+  onNudge: (id: string, delta: -1 | 1) => void;
+  onPlace: (id: string, to: number) => void;
+  onSelect: (id: string) => void;
+}) {
+  const [dragging, setDragging] = useState<string | null>(null);
+  const [over, setOver] = useState<number | null>(null);
+
+  function focusHandle(id: string) {
+    requestAnimationFrame(() => {
+      document.getElementById(`game-order-${id}`)?.focus();
+    });
+  }
+
+  function nudge(id: string, delta: -1 | 1) {
+    const from = games.findIndex((game) => game.id === id);
+    const to = from + delta;
+    if (from < 0 || to < 0 || to >= games.length) return;
+    onNudge(id, delta);
+    focusHandle(id);
+  }
+
+  function place(id: string, to: number) {
+    const from = games.findIndex((game) => game.id === id);
+    if (from < 0 || from === to || to < 0 || to >= games.length) return;
+    onPlace(id, to);
+    focusHandle(id);
+  }
+
+  if (!games.length) return <p className="mt-4 text-sm text-stone-600">还没有桌游。</p>;
+
+  return (
+    <ol className="mt-4 space-y-2" aria-label="桌游库从左到右的顺序">
+      {games.map((game, index) => {
+        const label = game.name.trim() || "未命名";
+        const active = over === index && dragging !== null && dragging !== game.id;
+        return (
+          <li
+            key={game.id}
+            onDragOver={(event) => {
+              event.preventDefault();
+              event.dataTransfer.dropEffect = "move";
+              setOver((current) => (current === index ? current : index));
+            }}
+            onDrop={(event) => {
+              event.preventDefault();
+              const id = event.dataTransfer.getData("text/plain") || dragging || "";
+              setDragging(null);
+              setOver(null);
+              if (id) place(id, index);
+            }}
+            className={`flex items-center gap-2 rounded-2xl border bg-white p-2 ${active ? "border-indigo-500 ring-2 ring-indigo-200" : "border-stone-200"} ${dragging === game.id ? "opacity-60" : ""}`}
+          >
+            <button
+              id={`game-order-${game.id}`}
+              type="button"
+              draggable
+              aria-label={`拖动「${label}」。上下方向键也可以调整顺序。`}
+              title="拖动排序"
+              onDragStart={(event) => {
+                event.dataTransfer.effectAllowed = "move";
+                event.dataTransfer.setData("text/plain", game.id);
+                setDragging(game.id);
+              }}
+              onDragEnd={() => {
+                setDragging(null);
+                setOver(null);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "ArrowUp") {
+                  event.preventDefault();
+                  nudge(game.id, -1);
+                } else if (event.key === "ArrowDown") {
+                  event.preventDefault();
+                  nudge(game.id, 1);
+                }
+              }}
+              className="grid shrink-0 cursor-grab grid-cols-2 gap-0.5 rounded-lg px-1.5 py-2 text-stone-400 active:cursor-grabbing"
+            >
+              {Array.from({ length: 6 }, (_, dot) => (
+                <span key={dot} className="h-1 w-1 rounded-full bg-current" />
+              ))}
+            </button>
+            <button type="button" onClick={() => onSelect(`game:${game.id}`)} className="min-w-0 flex-1 truncate text-left text-sm font-bold">
+              <span className="mr-2 text-xs font-bold text-stone-400 tabular-nums">{index + 1}</span>
+              <span aria-hidden className="mr-1">
+                {game.emoji}
+              </span>
+              {label}
+            </button>
+            <button type="button" className={moveClass} disabled={index === 0} aria-label={`上移「${label}」`} onClick={() => nudge(game.id, -1)}>
+              上移
+            </button>
+            <button type="button" className={moveClass} disabled={index === games.length - 1} aria-label={`下移「${label}」`} onClick={() => nudge(game.id, 1)}>
+              下移
+            </button>
+          </li>
+        );
+      })}
+    </ol>
   );
 }
 

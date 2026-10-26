@@ -3,6 +3,7 @@ import { chromeKeys, type ChromeKey } from "@/data/uiChrome";
 import { cssColor } from "@/lib/color";
 import { finishedEventSummary } from "@/lib/eventStatus";
 import { canonicalFormId } from "@/lib/formSync";
+import { readStoredOrder, sortByStoredOrder, withOrder } from "@/lib/gameOrder";
 import { linksFromJoinButtons, resolveJoinButtons, type JoinButton } from "@/lib/joinButtons";
 
 export type SiteGameDraft = {
@@ -17,6 +18,8 @@ export type SiteGameDraft = {
   coverUrl: string;
   showPlay: boolean;
   showTeach: boolean;
+  /** Left-to-right shelf position. 0 is the first card. */
+  order: number;
 };
 
 export type SiteSessionDraft = {
@@ -227,19 +230,21 @@ export function siteDraftFrom(content: ClubContent): SiteDraft {
       newsAside: content.ui.newsAside,
       joinTitle: content.ui.joinTitle,
     },
-    games: content.games.map((game) => ({
-      id: game.id,
-      name: game.name,
-      players: game.players,
-      kind: game.kind,
-      blurb: game.blurb,
-      borrowable: game.borrowable,
-      emoji: game.emoji,
-      teachUrl: game.teachUrl ?? "",
-      coverUrl: game.coverUrl ?? "",
-      showPlay: game.showPlay ?? game.action === "play",
-      showTeach: game.showTeach ?? game.action !== "play",
-    })),
+    games: withOrder(
+      content.games.map((game) => ({
+        id: game.id,
+        name: game.name,
+        players: game.players,
+        kind: game.kind,
+        blurb: game.blurb,
+        borrowable: game.borrowable,
+        emoji: game.emoji,
+        teachUrl: game.teachUrl ?? "",
+        coverUrl: game.coverUrl ?? "",
+        showPlay: game.showPlay ?? game.action === "play",
+        showTeach: game.showTeach ?? game.action !== "play",
+      })),
+    ),
     events: content.events.map((event) => ({
       id: event.id,
       group: event.group,
@@ -266,7 +271,7 @@ export function siteDraftFrom(content: ClubContent): SiteDraft {
 }
 
 export function applySiteDraft(base: ClubContent, draft: SiteDraft): ClubContent {
-  const games = draft.games.map((next) => {
+  const games = sortByStoredOrder(draft.games).map((next) => {
     const seed = base.games.find((item) => item.id === next.id);
     return {
       id: next.id,
@@ -430,7 +435,7 @@ export function normalizeSiteDraft(input: unknown, base: ClubContent): SiteDraft
 
 function normalizeGames(rows: unknown[], seed: SiteGameDraft[]) {
   const used = new Set<string>();
-  const games: SiteGameDraft[] = [];
+  const games: Array<Omit<SiteGameDraft, "order"> & { order?: number }> = [];
   for (const item of rows) {
     const raw = asRecord(item);
     const id = safeId(raw.id);
@@ -449,9 +454,10 @@ function normalizeGames(rows: unknown[], seed: SiteGameDraft[]) {
       coverUrl: text(raw.coverUrl, known?.coverUrl ?? ""),
       showPlay: flag(raw.showPlay, known?.showPlay ?? false),
       showTeach: flag(raw.showTeach, known?.showTeach ?? true),
+      order: readStoredOrder(raw.order),
     });
   }
-  return games;
+  return sortByStoredOrder(games);
 }
 
 function normalizeEvents(rows: unknown[], seed: SiteEventDraft[]) {
