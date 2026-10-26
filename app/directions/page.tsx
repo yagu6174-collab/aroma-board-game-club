@@ -143,14 +143,14 @@ export default function DirectionsPage() {
           <div className="absolute bottom-[10%] left-10 right-10">
             <p className="text-5xl font-black tracking-tight text-[#1c1917]">馨香桌游社</p>
             <p className="mt-3 max-w-xl text-sm leading-relaxed text-[#44403c]">{claim}</p>
-            <p className="mt-3 text-xs font-bold tracking-[0.14em] text-[#9a3412]">10.24 · 掼蛋与德扑专局 · 尚未举行</p>
+            <p className="mt-3 text-xs font-bold tracking-[0.14em] text-[#9a3412]">10.24 · 掼蛋与德扑专局 · 已结束</p>
           </div>
         </div>
       </section>
 
       <section className="mt-16">
         <p className="text-sm font-bold">丁 · 桌上的印刷品</p>
-        <p className="mt-1 max-w-2xl text-sm text-[#57534e]">主物体是一张立在桌上的桌卡：双线框、主张、下一场日期、一枚红章。周围是撕下来的日期纸条。它更接近活动启事，而不是玩具。</p>
+        <p className="mt-1 max-w-2xl text-sm text-[#57534e]">主物体是一张立在桌上的桌卡：双线框、主张、日期、一枚红章。周围是撕下来的日期纸条。它更接近活动启事，而不是玩具。</p>
         <div className="relative mt-4 h-[640px] overflow-hidden bg-[#e7dccb]">
           <div className="absolute inset-x-0 bottom-0 h-24 bg-[#c4b49a]" />
           <div className="absolute left-1/2 top-[12%] h-[500px] w-[560px] -translate-x-1/2 bg-[#f7f4ef] px-12 py-10">
@@ -162,14 +162,12 @@ export default function DirectionsPage() {
                 <p className="mt-6 text-sm leading-relaxed">{claim}</p>
                 <div className="mt-8 flex items-end justify-between">
                   <div>
-                    <p className="text-xs font-bold tracking-[0.14em] text-[#78716c]">下一场</p>
+                    <p className="text-xs font-bold tracking-[0.14em] text-[#78716c]">已结束</p>
                     <p className="text-lg font-black">2026.10.24</p>
                     <p className="text-sm">掼蛋与德扑专局</p>
                   </div>
                   <div className="grid h-20 w-20 place-items-center rounded-full border-2 border-[#b91c1c] text-center text-xs font-black leading-tight text-[#b91c1c] rotate-[-12deg]">
-                    尚未
-                    <br />
-                    举行
+                    已结束
                   </div>
                 </div>
               </div>

@@ -422,7 +422,7 @@ export const clubContent = {
       title: "掼蛋与德扑专局",
       fee: "费用未写",
       feePlaceholder: true,
-      summary: "尚未举行。鸿图道 22 号俊汇中心 701 室，借用香港圣经教会观塘堂场地。",
+      summary: "已结束。鸿图道 22 号俊汇中心 701 室，借用香港圣经教会观塘堂场地。",
       body: articleBody("馨香桌游社-掼蛋与德扑专局"),
       time: "2026.10.24（周六）16:00–18:00",
       place: "鸿图道 22 号俊汇中心 701 室，借用香港圣经教会观塘堂场地",
