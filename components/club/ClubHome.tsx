@@ -221,12 +221,6 @@ export default function ClubHome({
     window.open(next, "_blank", "noopener,noreferrer");
   }
 
-  function goSignup() {
-    const href = content.links.form.href.trim();
-    if (!href || editMode) return;
-    window.location.assign(href);
-  }
-
   function openTeach(game: ClubGame) {
     if (editMode) {
       choose(`game:${game.id}`);
@@ -391,9 +385,17 @@ export default function ClubHome({
                 </Link>
               ))}
             </div>
-            <button type="button" onClick={() => (editMode ? choose("cta") : goSignup())} className="hidden min-h-11 items-center rounded-full bg-indigo-600 px-4 text-sm font-bold text-white sm:inline-flex">
+            <a
+              href="#events"
+              onClick={(event) => {
+                if (!editMode) return;
+                event.preventDefault();
+                choose("cta");
+              }}
+              className="hidden min-h-11 items-center rounded-full bg-indigo-600 px-4 text-sm font-bold text-white sm:inline-flex"
+            >
               {ui.signup}
-            </button>
+            </a>
             <button
               type="button"
               className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl border border-slate-200 font-bold lg:hidden"
@@ -424,9 +426,20 @@ export default function ClubHome({
                 {label}
               </a>
             ))}
-            <button type="button" onClick={() => (editMode ? choose("cta") : goSignup())} className="mt-2 flex min-h-11 w-full items-center justify-center rounded-full bg-indigo-600 font-bold text-white">
+            <a
+              href="#events"
+              onClick={(event) => {
+                if (editMode) {
+                  event.preventDefault();
+                  choose("cta");
+                  return;
+                }
+                setMenu(false);
+              }}
+              className="mt-2 flex min-h-11 w-full items-center justify-center rounded-full bg-indigo-600 font-bold text-white"
+            >
               {ui.signup}
-            </button>
+            </a>
             <div className="mt-2 flex gap-3 md:hidden">
               {LANGS.map((item) => (
                 <Link key={item.id} href={withLang(pathname, item.id)} className="inline-flex min-h-11 items-center font-bold">
@@ -470,9 +483,9 @@ export default function ClubHome({
               {content.hero.intro}
             </p>
             <div className={`rise-late mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center ${mark("cta")} ${editMode ? "cursor-pointer" : ""}`} {...editProps("cta")}>
-              <button type="button" onClick={goSignup} className={`inline-flex min-h-11 items-center justify-center rounded-xl bg-indigo-600 px-6 font-bold text-white ${editMode ? "pointer-events-none" : ""}`}>
+              <a href="#events" className={`inline-flex min-h-11 items-center justify-center rounded-xl bg-indigo-600 px-6 font-bold text-white ${editMode ? "pointer-events-none" : ""}`}>
                 {ui.signupEvent}
-              </button>
+              </a>
               <a href="#about" className={`inline-flex min-h-11 items-center justify-center rounded-xl border-2 border-slate-300 bg-white px-6 font-bold text-slate-800 ${editMode ? "pointer-events-none" : ""}`}>
                 {ui.learnMore}
               </a>
