@@ -1,6 +1,7 @@
 import type { ClubContent, ClubLink, GameKind } from "@/data/club";
 import { chromeKeys, type ChromeKey } from "@/data/uiChrome";
 import { cssColor } from "@/lib/color";
+import { finishedEventSummary } from "@/lib/eventStatus";
 import { canonicalFormId } from "@/lib/formSync";
 
 export type SiteGameDraft = {
@@ -294,7 +295,7 @@ export function applySiteDraft(base: ClubContent, draft: SiteDraft): ClubContent
       title: next.title,
       fee: next.fee,
       feePlaceholder: next.fee.includes("未写"),
-      summary: next.summary,
+      summary: finishedEventSummary(next.summary, next.startsAt || undefined),
       body: next.body,
       time: next.time,
       place: next.place,
@@ -466,16 +467,17 @@ function normalizeEvents(rows: unknown[], seed: SiteEventDraft[]) {
     used.add(id);
     const known = seed.find((event) => event.id === id);
     const sessionRows = Array.isArray(raw.sessions) ? raw.sessions : null;
+    const startsAt = text(raw.startsAt, known?.startsAt ?? "");
     events.push({
       id,
       group: groupOf(raw.group, known?.group ?? "club"),
       title: text(raw.title, known?.title ?? "新活动"),
       fee: text(raw.fee, known?.fee ?? ""),
       place: text(raw.place, known?.place ?? ""),
-      summary: text(raw.summary, known?.summary ?? ""),
+      summary: finishedEventSummary(text(raw.summary, known?.summary ?? ""), startsAt),
       body: text(raw.body, known?.body ?? ""),
       time: text(raw.time, known?.time ?? ""),
-      startsAt: text(raw.startsAt, known?.startsAt ?? ""),
+      startsAt,
       emoji: text(raw.emoji, known?.emoji ?? "🎲"),
       coverUrl: text(raw.coverUrl, known?.coverUrl ?? ""),
       signupUrl: text(raw.signupUrl, known?.signupUrl ?? ""),
