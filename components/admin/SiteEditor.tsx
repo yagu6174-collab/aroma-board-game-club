@@ -8,6 +8,7 @@ import ClubHome from "@/components/club/ClubHome";
 import LogoutButton from "@/components/LogoutButton";
 import { clubContent } from "@/data/club";
 import { applySiteDraft, type SiteColors, type SiteDraft, type SiteEventDraft, type SiteGameDraft, type SiteHeroCopy } from "@/data/siteDraft";
+import type { JoinButton, JoinButtonStyle } from "@/lib/joinButtons";
 import type { ChromeKey } from "@/data/uiChrome";
 import { cssColor, fallbackColors } from "@/lib/color";
 import { mergeFirstSessionSigned, parseGoogleFormId } from "@/lib/formSync";
@@ -111,7 +112,15 @@ export default function SiteEditor({
       </div>
       <div className="flex min-h-0 flex-1">
         <div className={`min-w-0 flex-1 overflow-y-auto [transform:translateZ(0)] ${pane === "edit" ? "max-lg:hidden" : ""}`}>
-          <ClubHome content={content} lang="zh" editMode selected={selected} onSelect={choose} onLibraryAdd={() => ask("要新增一盒桌游吗？", () => insertGame(setDraft, choose))} />
+          <ClubHome
+            content={content}
+            lang="zh"
+            editMode
+            selected={selected}
+            onSelect={choose}
+            onLibraryAdd={() => ask("要新增一盒桌游吗？", () => insertGame(setDraft, choose))}
+            onJoinAdd={() => ask("要新增一个按钮吗？", () => insertJoinButton(setDraft, choose))}
+          />
         </div>
         <aside className={`w-full shrink-0 overflow-y-auto border-l border-stone-200 bg-white lg:w-96 ${pane === "preview" ? "max-lg:hidden" : ""}`}>
           <EditorForm draft={draft} selected={selected} onChange={setDraft} onSelect={choose} ask={ask} />
@@ -372,7 +381,8 @@ function EditorForm({
     );
   }
 
-  if (selected === "join") {
+  if (selected === "join" || selected?.startsWith("join-button:")) {
+    const activeId = selected.startsWith("join-button:") ? selected.slice("join-button:".length) : "";
     return (
       <FormShell title="加入我们">
         <Field label="标题">
@@ -381,10 +391,19 @@ function EditorForm({
         <Field label="正文">
           <textarea rows={5} value={draft.join} onChange={(input) => onChange({ ...draft, join: input.target.value })} className={fieldClass} />
         </Field>
-        <LinkFields
-          links={draft.links}
-          onChange={(links) => onChange({ ...draft, links })}
+        <JoinButtonFields
+          buttons={draft.joinButtons}
+          activeId={activeId}
+          onChange={(joinButtons) => onChange((current) => ({ ...current, joinButtons }))}
+          onSelect={onSelect}
+          ask={ask}
         />
+        <button type="button" className={`${quietClass} mt-4`} onClick={() => ask("要新增一个按钮吗？", () => insertJoinButton(onChange, onSelect))}>
+          加一个按钮
+        </button>
+        <p className="mt-3 text-xs leading-relaxed text-stone-500">
+          点预览里的按钮会打开这一项的文字、颜色和链接，不会跳走。要查看网址，用「打开链接」。原来的邮箱、微信、WhatsApp、Instagram 和报名表格还连着页头图标、联系页和页头报名。删掉其中一颗，对应的地方也会空掉。新加的按钮只出现在这一块。
+        </p>
       </FormShell>
     );
   }
@@ -617,6 +636,18 @@ function EditorForm({
       </div>
     </FormShell>
   );
+}
+
+function insertJoinButton(onChange: (next: SiteDraft | ((current: SiteDraft) => SiteDraft)) => void, onSelect: (id: string) => void) {
+  const id = `btn-${Date.now().toString(36)}`;
+  onChange((current) => ({
+    ...current,
+    joinButtons: [
+      ...current.joinButtons,
+      { id, slot: "", text: "新按钮", href: "", style: "solid", color: "#4f46e5", colorMid: "", colorEnd: "", textColor: "#ffffff" },
+    ],
+  }));
+  onSelect(`join-button:${id}`);
 }
 
 function insertGame(onChange: (next: SiteDraft | ((current: SiteDraft) => SiteDraft)) => void, onSelect: (id: string) => void) {
@@ -853,42 +884,152 @@ function EventFields({ event, onChange }: { event: SiteEventDraft; onChange: (ne
   );
 }
 
-function LinkFields({
-  links,
+function JoinButtonFields({
+  buttons,
+  activeId,
   onChange,
+  onSelect,
+  ask,
 }: {
-  links: SiteDraft["links"];
-  onChange: (next: SiteDraft["links"]) => void;
+  buttons: JoinButton[];
+  activeId: string;
+  onChange: (next: JoinButton[]) => void;
+  onSelect: (id: string) => void;
+  ask: (message: string, run: () => void) => void;
 }) {
-  const rows = [
-    ["email", "邮箱"],
-    ["wechat", "微信"],
-    ["whatsapp", "WhatsApp"],
-    ["instagram", "Instagram"],
-    ["form", "报名表格"],
-  ] as const;
+  useEffect(() => {
+    if (!activeId) return;
+    const card = document.getElementById(`join-button-card-${activeId}`);
+    if (!card) return;
+    card.scrollIntoView({ block: "nearest" });
+    if (card.contains(document.activeElement)) return;
+    const field = document.getElementById(`join-button-text-${activeId}`);
+    if (field instanceof HTMLInputElement) field.focus();
+  }, [activeId]);
+
+  function patch(id: string, next: Partial<JoinButton>) {
+    onChange(buttons.map((button) => (button.id === id ? { ...button, ...next } : button)));
+  }
+
+  function move(index: number, dir: -1 | 1) {
+    const target = index + dir;
+    if (target < 0 || target >= buttons.length) return;
+    const next = buttons.slice();
+    const [item] = next.splice(index, 1);
+    if (!item) return;
+    next.splice(target, 0, item);
+    onChange(next);
+  }
+
   return (
     <>
-      {rows.map(([key, label]) => (
-        <fieldset key={key} className="mt-4 rounded-2xl border border-stone-200 p-3">
-          <legend className="px-1 text-xs font-bold text-stone-500">{label}</legend>
-          <Field label="显示文字">
-            <input
-              value={links[key].text}
-              onChange={(input) => onChange({ ...links, [key]: { ...links[key], text: input.target.value } })}
-              className={fieldClass}
-            />
-          </Field>
-          <Field label="跳转链接">
-            <input
-              value={links[key].href}
-              onChange={(input) => onChange({ ...links, [key]: { ...links[key], href: input.target.value } })}
-              placeholder="留空则不跳转"
-              className={fieldClass}
-            />
-          </Field>
-        </fieldset>
-      ))}
+      {buttons.map((button, index) => {
+        const active = button.id === activeId;
+        return (
+          <fieldset
+            key={button.id}
+            id={`join-button-card-${button.id}`}
+            className={`mt-4 rounded-2xl border p-3 ${active ? "border-orange-500 ring-2 ring-orange-500" : "border-stone-200"}`}
+            onFocusCapture={() => {
+              if (!active) onSelect(`join-button:${button.id}`);
+            }}
+            onClick={(event) => {
+              const target = event.target;
+              if (!(target instanceof Element)) return;
+              if (target.closest("input, select, textarea, button, a, label")) return;
+              onSelect(`join-button:${button.id}`);
+            }}
+          >
+            <legend className="px-1 text-xs font-bold text-stone-500">{button.text.trim() || "按钮"}</legend>
+            <Field label="显示文字">
+              <input
+                id={`join-button-text-${button.id}`}
+                value={button.text}
+                onChange={(input) => patch(button.id, { text: input.target.value })}
+                className={fieldClass}
+              />
+            </Field>
+            <Field label="跳转链接">
+              <input
+                value={button.href}
+                onChange={(input) => patch(button.id, { href: input.target.value })}
+                placeholder="留空则不跳转"
+                spellCheck={false}
+                className={fieldClass}
+              />
+            </Field>
+            <button
+              type="button"
+              className={`${quietClass} mt-2 disabled:opacity-40`}
+              disabled={!button.href.trim()}
+              onClick={() => {
+                const href = button.href.trim();
+                if (!href) return;
+                window.open(href, "_blank", "noopener,noreferrer");
+              }}
+            >
+              打开链接
+            </button>
+            <Field label="样式">
+              <select
+                value={button.style}
+                onChange={(input) => {
+                  const style = input.target.value as JoinButtonStyle;
+                  patch(button.id, {
+                    style,
+                    colorEnd: style === "gradient" && !button.colorEnd ? "#fb923c" : button.colorEnd,
+                  });
+                }}
+                className={fieldClass}
+              >
+                <option value="solid">纯色</option>
+                <option value="gradient">渐变</option>
+                <option value="glass">半透明</option>
+              </select>
+            </Field>
+            {button.style === "gradient" ? (
+              <>
+                <ColorField label="起始色" hint="从左到右的第一色" value={button.color} fallback="#a855f7" onChange={(color) => patch(button.id, { color })} />
+                <ColorField label="中间色" hint="留空则只有两端" value={button.colorMid} fallback="#ec4899" clearable onChange={(colorMid) => patch(button.id, { colorMid })} />
+                <ColorField label="结束色" hint="从左到右的最后一色" value={button.colorEnd} fallback="#fb923c" onChange={(colorEnd) => patch(button.id, { colorEnd })} />
+              </>
+            ) : (
+              <ColorField
+                label="背景色"
+                hint={button.style === "glass" ? "淡淡铺在深色底上" : "按钮的底色"}
+                value={button.color}
+                fallback={button.style === "glass" ? "#ffffff" : "#4f46e5"}
+                onChange={(color) => patch(button.id, { color })}
+              />
+            )}
+            <ColorField label="文字色" hint="按钮上的字" value={button.textColor} fallback="#ffffff" onChange={(textColor) => patch(button.id, { textColor })} />
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button type="button" className={`${quietClass} disabled:opacity-40`} disabled={index === 0} onClick={() => move(index, -1)}>
+                上移
+              </button>
+              <button type="button" className={`${quietClass} disabled:opacity-40`} disabled={index === buttons.length - 1} onClick={() => move(index, 1)}>
+                下移
+              </button>
+              <button
+                type="button"
+                className={quietClass}
+                onClick={() =>
+                  ask(`要删除「${button.text.trim() || "这个按钮"}」吗？`, () => {
+                    const next = buttons.filter((item) => item.id !== button.id);
+                    onChange(next);
+                    if (active) {
+                      const neighbor = next[index] ?? next[index - 1];
+                      onSelect(neighbor ? `join-button:${neighbor.id}` : "join");
+                    }
+                  })
+                }
+              >
+                删除这个按钮
+              </button>
+            </div>
+          </fieldset>
+        );
+      })}
     </>
   );
 }
@@ -964,28 +1105,37 @@ function ColorField({
   value,
   fallback,
   onChange,
+  clearable = false,
 }: {
   label: string;
   hint: string;
   value: string;
   fallback: string;
   onChange: (value: string) => void;
+  clearable?: boolean;
 }) {
   return (
-    <label className="mt-3 block text-sm font-bold">
-      {label}
-      <span className="mt-0.5 block text-xs font-normal text-stone-500">{hint}</span>
-      <span className="mt-1 flex items-center gap-2">
-        <input
-          type="color"
-          value={cssColor(value, fallback)}
-          onChange={(input) => onChange(input.target.value)}
-          className="h-11 w-14 cursor-pointer rounded-lg border border-stone-300 bg-white p-1"
-          aria-label={label}
-        />
-        <input value={value} onChange={(input) => onChange(input.target.value)} spellCheck={false} className={`${fieldClass} mt-0 font-mono`} />
-      </span>
-    </label>
+    <div className="mt-3">
+      <label className="block text-sm font-bold">
+        {label}
+        <span className="mt-0.5 block text-xs font-normal text-stone-500">{hint}</span>
+        <span className="mt-1 flex items-center gap-2">
+          <input
+            type="color"
+            value={cssColor(value, fallback)}
+            onChange={(input) => onChange(input.target.value)}
+            className="h-11 w-14 cursor-pointer rounded-lg border border-stone-300 bg-white p-1"
+            aria-label={label}
+          />
+          <input value={value} onChange={(input) => onChange(input.target.value)} spellCheck={false} className={`${fieldClass} mt-0 font-mono`} />
+        </span>
+      </label>
+      {clearable && value ? (
+        <button type="button" className={`${quietClass} mt-2`} onClick={() => onChange("")}>
+          去掉中间色
+        </button>
+      ) : null}
+    </div>
   );
 }
 
