@@ -122,6 +122,7 @@ export default function SiteEditor({
             onSelect={choose}
             onLibraryAdd={() => ask("要新增一盒桌游吗？", () => insertGame(setDraft, choose))}
             onJoinAdd={() => ask("要新增一个按钮吗？", () => insertJoinButton(setDraft, choose))}
+            onReorderGame={(id, to) => setDraft((current) => placeGame(current, id, to))}
           />
         </div>
         <aside className={`w-full shrink-0 overflow-y-auto border-l border-stone-200 bg-stone-50 lg:w-96 ${pane === "preview" ? "max-lg:hidden" : ""}`}>
@@ -409,7 +410,7 @@ function EditorForm({
 
   if (selected === "games-order") {
     return (
-      <FormShell title="桌游库顺序" hint="上面的一盒，在主页货架上更靠左。拖左侧手柄，或点上移、下移。手机上用按钮更稳。改完要点右上角保存，公开页才会换顺序。" scrollKey={key}>
+      <FormShell title="桌游库顺序" hint="主页预览里按住一张卡左右拖，就是货架从左到右的顺序。下面的列表仍可拖左侧手柄，或点上移、下移。改完要点右上角保存，公开页才会换顺序。" scrollKey={key}>
         <FormGroup title="顺序/删除">
           <GameOrderList
             games={draft.games}
@@ -695,7 +696,7 @@ function EditorForm({
     const index = draft.games.findIndex((item) => item.id === game.id);
     const label = game.name.trim() || "这盒桌游";
     return (
-      <FormShell title={game.name || "桌游"} hint={`货架从左到右第 ${index + 1} 位。改完要点右上角保存，公开页才会换内容和顺序。`} scrollKey={key}>
+      <FormShell title={game.name || "桌游"} hint={`货架从左到右第 ${index + 1} 位。预览里拖动卡片也是改这个顺序。改完要点右上角保存，公开页才会换内容和顺序。`} scrollKey={key}>
         <GameFields game={game} onChange={(next) => onChange({ ...draft, games: draft.games.map((item) => (item.id === game.id ? next : item)) })} />
         <FormGroup title="顺序/删除">
           <div className="mt-3 flex flex-wrap gap-2">

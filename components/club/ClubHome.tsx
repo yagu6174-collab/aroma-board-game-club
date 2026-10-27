@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useId, useMemo, useRef, useState, type CSSProperties, type FormEvent, type ReactNode } from "react";
 import DiceCursor from "@/components/club/DiceCursor";
 import HeroDots from "@/components/club/HeroDots";
+import { shelfCardStyle, useShelfDrag } from "@/components/club/useShelfDrag";
 import type { ClubContent, ClubEvent, ClubGame, GameKind } from "@/data/club";
 import { cssColor, fallbackColors } from "@/lib/color";
 import { joinButtonPaint, type JoinButton } from "@/lib/joinButtons";
@@ -93,6 +94,7 @@ export default function ClubHome({
   onSelect,
   onLibraryAdd,
   onJoinAdd,
+  onReorderGame,
 }: {
   content: ClubContent;
   lang: Lang;
@@ -101,6 +103,7 @@ export default function ClubHome({
   onSelect?: (id: string) => void;
   onLibraryAdd?: () => void;
   onJoinAdd?: () => void;
+  onReorderGame?: (id: string, to: number) => void;
 }) {
   const ui = content.ui;
   const paint = heroPaint(content);
@@ -123,7 +126,13 @@ export default function ClubHome({
   const [errors, setErrors] = useState<string[]>([]);
   const [borrowOk, setBorrowOk] = useState(false);
   const [nextHidden, setNextHidden] = useState(false);
+  const canReorder = editMode && Boolean(onReorderGame);
   const shelfRef = useRef<HTMLDivElement>(null);
+  const shelfDrag = useShelfDrag({
+    shelfRef,
+    enabled: canReorder,
+    onReorder: (id, to) => onReorderGame?.(id, to),
+  });
   const about = useInview();
   const games = useInview();
   const titleId = useId();
@@ -237,7 +246,7 @@ export default function ClubHome({
   }
 
   function nudgeShelf(dir: -1 | 1) {
-    shelfRef.current?.scrollBy({ left: dir * 280, behavior: "smooth" });
+    shelfRef.current?.scrollBy({ left: dir * 280, behavior: shelfDrag.drag ? "auto" : "smooth" });
   }
 
   function choose(id: string) {
@@ -555,22 +564,27 @@ export default function ClubHome({
               <p className={`mx-auto mt-4 max-w-2xl text-center text-slate-300 ${mark("games-copy")} ${editMode ? "cursor-pointer" : ""}`} {...editProps("games-copy")}>{ui.gamesSub}</p>
               <p className={`mx-auto mt-2 max-w-2xl text-center text-sm text-slate-400 ${mark("games-copy")} ${editMode ? "cursor-pointer" : ""}`} {...editProps("games-copy")}>{ui.gamesNote}</p>
               <div className="mt-8 flex items-center justify-end gap-2">
-                <button type="button" aria-label={ui.shelfPrev} onClick={() => (editMode ? choose("games-copy") : nudgeShelf(-1))} className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-600 bg-slate-800 font-bold text-white">
+                <button type="button" aria-label={ui.shelfPrev} onClick={() => nudgeShelf(-1)} className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-600 bg-slate-800 font-bold text-white">
                   ←
                 </button>
-                <button type="button" aria-label={ui.shelfNext} onClick={() => (editMode ? choose("games-copy") : nudgeShelf(1))} className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-600 bg-slate-800 font-bold text-white">
+                <button type="button" aria-label={ui.shelfNext} onClick={() => nudgeShelf(1)} className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-600 bg-slate-800 font-bold text-white">
                   →
                 </button>
               </div>
               <div
                 ref={shelfRef}
-                className="mt-4 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                data-game-shelf=""
+                className={`mt-4 flex gap-4 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${canReorder ? "py-3" : "pb-2"} ${shelfDrag.drag ? "snap-none [&_button]:cursor-grabbing" : "snap-x snap-mandatory"}`}
+                style={shelfDrag.drag ? { scrollBehavior: "auto" } : undefined}
               >
                 {content.games.map((item, index) => (
                   <div
                     key={item.id}
-                    className={`w-[min(82vw,240px)] shrink-0 snap-start sm:w-[260px] ${editMode ? "cursor-pointer" : ""}`}
+                    data-shelf-card=""
+                    data-game-id={item.id}
+                    className={`w-[min(82vw,240px)] shrink-0 snap-start sm:w-[260px] ${canReorder ? "cursor-grab touch-pan-y select-none" : editMode ? "cursor-pointer" : ""}`}
                     onClick={editMode ? () => choose(`game:${item.id}`) : undefined}
+                    style={shelfCardStyle(shelfDrag.drag, index)}
                   >
                     <GameCard
                       game={item}
@@ -580,6 +594,7 @@ export default function ClubHome({
                       kindLabel={kindLabel[item.kind]}
                       kindClass={KIND_CLASS[item.kind]}
                       picked={selected === `game:${item.id}`}
+                      held={shelfDrag.drag?.from === index}
                       onPlay={() => (editMode ? choose(`game:${item.id}`) : setModal({ type: "ice" }))}
                       onTeach={() => openTeach(item)}
                       onBorrow={() => (editMode ? choose(`game:${item.id}`) : openBorrow(item.id))}
@@ -587,6 +602,7 @@ export default function ClubHome({
                   </div>
                 ))}
               </div>
+              {canReorder ? <p className="mt-3 text-center text-xs font-bold text-orange-200">按住卡片左右拖动可调整顺序。点一下仍可编辑，保存后公开页才会换顺序。</p> : null}
               <p className={`mt-3 text-center text-xs text-slate-500 md:hidden ${mark("games-copy")} ${editMode ? "cursor-pointer" : ""}`} onClick={editMode ? () => choose("games-copy") : undefined}>{ui.shelfHint}</p>
             </div>
           </div>
@@ -1168,6 +1184,7 @@ function GameCard({
   kindLabel,
   kindClass,
   picked = false,
+  held = false,
   onPlay,
   onTeach,
   onBorrow,
@@ -1179,18 +1196,19 @@ function GameCard({
   kindLabel: string;
   kindClass: string;
   picked?: boolean;
+  held?: boolean;
   onPlay: () => void;
   onTeach: () => void;
   onBorrow: () => void;
 }) {
   return (
     <article
-      className={`card-lift group h-full overflow-hidden rounded-[2rem] border bg-slate-800 transition ${picked ? "z-[1] border-orange-300 ring-4 ring-orange-400 shadow-[0_0_0_4px_rgba(251,146,60,0.4),0_18px_40px_rgba(251,146,60,0.28)]" : "border-slate-700"} ${shown ? "await-deal inview" : "await-deal"}`}
+      className={`${held ? "" : "card-lift"} group h-full overflow-hidden rounded-[2rem] border bg-slate-800 transition ${picked ? "z-[1] border-orange-300 ring-4 ring-orange-400 shadow-[0_0_0_4px_rgba(251,146,60,0.4),0_18px_40px_rgba(251,146,60,0.28)]" : "border-slate-700"} ${shown ? "await-deal inview" : "await-deal"}`}
       style={{ ["--i" as string]: index }}
     >
       <div className="relative h-44 overflow-hidden bg-slate-900">
         {game.coverUrl ? (
-          <img src={game.coverUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
+          <img src={game.coverUrl} alt="" draggable={false} className="absolute inset-0 h-full w-full object-cover" />
         ) : (
           <div className="cover-zoom grid h-full place-items-center text-7xl">{game.emoji}</div>
         )}
