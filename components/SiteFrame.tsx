@@ -3,7 +3,9 @@
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 import DotField from "@/components/DotField";
+import ClubFooter from "@/components/club/ClubFooter";
 import SiteHeader from "@/components/SiteHeader";
+import type { FooterContacts } from "@/lib/footerLinks";
 import type { Chrome } from "@/lib/nav";
 import type { Lang } from "@/lib/types";
 
@@ -12,12 +14,19 @@ export default function SiteFrame({
   chrome,
   whatsapp,
   instagram,
+  footer,
   children,
 }: {
   lang: Lang;
   chrome: Chrome;
   whatsapp?: string;
   instagram?: string;
+  footer: {
+    name: string;
+    logoUrl: string;
+    copyright: string;
+    contacts: FooterContacts;
+  };
   children: React.ReactNode;
 }) {
   useEffect(() => {
@@ -36,15 +45,20 @@ export default function SiteFrame({
       <DotField />
       <SiteHeader lang={lang} chrome={chrome} whatsapp={whatsapp} instagram={instagram} />
       {children}
-      <footer className="border-t border-slate-900 bg-slate-950 py-12 text-center text-slate-400 md:py-16">
-        <div className="mx-auto flex max-w-6xl flex-wrap justify-center gap-6 px-4 text-sm font-bold">
-          <a href={place("about")}>{chrome.about}</a>
-          <a href={place("games")}>{chrome.games}</a>
-          <a href={place("events")}>{chrome.events}</a>
-          <a href={place("contact")}>{chrome.contact}</a>
-        </div>
-        <p className="mt-6 text-sm">{chrome.footer}</p>
-      </footer>
+      <ClubFooter
+        className="border-t border-slate-900"
+        name={footer.name}
+        logoUrl={footer.logoUrl}
+        copyright={footer.copyright}
+        contacts={footer.contacts}
+        lang={lang}
+        links={[
+          { href: place("about"), label: chrome.about },
+          { href: place("games"), label: chrome.games },
+          { href: place("events"), label: chrome.events },
+          { href: place("contact"), label: chrome.contact },
+        ]}
+      />
     </div>
   );
 }

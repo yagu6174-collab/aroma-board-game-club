@@ -4,6 +4,7 @@ import { cssColor } from "@/lib/color";
 import { finishedEventSummary } from "@/lib/eventStatus";
 import { canonicalFormId } from "@/lib/formSync";
 import { readStoredOrder, sortByStoredOrder, withOrder } from "@/lib/gameOrder";
+import { footerContactsFrom, type FooterContacts } from "@/lib/footerLinks";
 import { linksFromJoinButtons, resolveJoinButtons, type JoinButton } from "@/lib/joinButtons";
 
 export type SiteGameDraft = {
@@ -102,6 +103,7 @@ export type SiteDraft = {
   about: string;
   join: string;
   footer: string;
+  footerContacts: FooterContacts;
   borrowRules: string;
   topics: string[];
   photoUrl: string;
@@ -192,6 +194,7 @@ export function siteDraftFrom(content: ClubContent): SiteDraft {
     about: content.about.p2,
     join: content.join,
     footer: content.footer,
+    footerContacts: { ...content.footerContacts },
     borrowRules: content.borrowRules,
     topics: [...content.topics],
     photoUrl: content.about.photoUrl,
@@ -332,6 +335,7 @@ export function applySiteDraft(base: ClubContent, draft: SiteDraft): ClubContent
     about: { ...base.about, title: draft.sections.aboutTitle, p1: draft.sections.aboutP1, p2: draft.about, photoUrl: draft.photoUrl },
     join: draft.join,
     footer: draft.footer,
+    footerContacts: { ...draft.footerContacts },
     borrowRules: draft.borrowRules,
     topics: draft.topics,
     ui: {
@@ -382,6 +386,7 @@ export function normalizeSiteDraft(input: unknown, base: ClubContent): SiteDraft
     about: text(raw.about, seed.about),
     join: text(raw.join, seed.join),
     footer: text(raw.footer, seed.footer),
+    footerContacts: footerContactsFrom(raw.footerContacts, seed.footerContacts),
     borrowRules: text(raw.borrowRules, seed.borrowRules),
     topics: topicsOf(raw.topics, seed.topics),
     photoUrl: text(raw.photoUrl, seed.photoUrl),

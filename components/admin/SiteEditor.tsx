@@ -567,8 +567,14 @@ function EditorForm({
   }
 
   if (selected === "footer") {
+    const contacts = draft.footerContacts;
+    const patchContacts = (next: Partial<typeof contacts>) => onChange({ ...draft, footerContacts: { ...contacts, ...next } });
     return (
-      <FormShell title="页脚" hint="社团名用标志里的中文名。关于我们、桌游库、加入我们用导航里的字。英文页仍显示这行原文。" scrollKey={key}>
+      <FormShell
+        title="页脚"
+        hint="社团名用标志里的中文名。关于我们、桌游库、加入我们用导航里的字。地点、电话、WhatsApp、邮箱和地图按钮在这里改。英文页仍显示这些原文。"
+        scrollKey={key}
+      >
         <FormGroup title="文案">
           <Field label="版权行">
             <textarea rows={3} value={draft.footer} onChange={(input) => onChange({ ...draft, footer: input.target.value })} className={fieldClass} />
@@ -576,6 +582,35 @@ function EditorForm({
           <button type="button" className={`${quietClass} mt-3`} onClick={() => onSelect("nav")}>
             改导航文字
           </button>
+        </FormGroup>
+        <FormGroup title="联系">
+          <Field label="地点">
+            <textarea rows={3} value={contacts.address} onChange={(input) => patchContacts({ address: input.target.value })} className={fieldClass} />
+          </Field>
+          <Field label="电话">
+            <input value={contacts.phone} onChange={(input) => patchContacts({ phone: input.target.value })} inputMode="tel" autoComplete="tel" className={fieldClass} />
+          </Field>
+          <Field label="WhatsApp">
+            <input value={contacts.whatsapp} onChange={(input) => patchContacts({ whatsapp: input.target.value })} className={fieldClass} />
+          </Field>
+          <Field label="邮箱">
+            <input value={contacts.email} onChange={(input) => patchContacts({ email: input.target.value })} inputMode="email" autoComplete="email" className={fieldClass} />
+          </Field>
+        </FormGroup>
+        <FormGroup title="链接">
+          <Field label="地图按钮">
+            <input value={contacts.mapLabel} onChange={(input) => patchContacts({ mapLabel: input.target.value })} className={fieldClass} />
+          </Field>
+          <Field label="地图链接">
+            <input
+              value={contacts.mapUrl}
+              onChange={(input) => patchContacts({ mapUrl: input.target.value })}
+              placeholder="https:// 或 geo:"
+              spellCheck={false}
+              className={fieldClass}
+            />
+          </Field>
+          <p className="mt-2 text-xs leading-relaxed text-stone-500">改地点时，把地图链接里的地址一并换成新的。留空按钮文字或链接，按钮就不显示。</p>
         </FormGroup>
       </FormShell>
     );
