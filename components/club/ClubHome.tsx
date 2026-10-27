@@ -314,7 +314,10 @@ export default function ClubHome({
     [ui.navJoin, "#join"],
   ] as const;
 
-  const mark = (id: string) => (editMode && selected === id ? "rounded-2xl ring-2 ring-orange-500 ring-offset-2" : "");
+  const mark = (id: string) =>
+    editMode && selected === id
+      ? "relative z-[1] rounded-2xl bg-orange-400/15 ring-4 ring-orange-500 ring-offset-2 shadow-[0_0_0_4px_rgba(249,115,22,0.22)]"
+      : "";
   function editProps(id: string) {
     if (!editMode) return {};
     return {
@@ -337,6 +340,7 @@ export default function ClubHome({
           accent={paint.accent}
           placed={editMode ? "preview" : "screen"}
           editing={editMode}
+          picked={editMode && selected === "next"}
           onOpen={() => (editMode ? choose("next") : setModal({ type: "event", id: nextEvent.id }))}
           onDismiss={editMode ? () => choose("next") : dismissNext}
         />
@@ -1038,7 +1042,7 @@ function JoinLink({
 }) {
   const label = button.text.trim();
   if (!editMode && !label) return null;
-  const box = `inline-flex min-h-11 items-center justify-center rounded-xl px-6 font-bold text-white ${picked ? "ring-2 ring-orange-500 ring-offset-2" : ""} ${editMode ? "cursor-pointer" : ""}`;
+  const box = `inline-flex min-h-11 items-center justify-center rounded-xl px-6 font-bold text-white transition ${picked ? "z-[1] ring-4 ring-orange-200 ring-offset-2 ring-offset-slate-900 shadow-[0_0_0_5px_rgba(251,146,60,0.55)]" : ""} ${editMode ? "cursor-pointer" : ""}`;
   const style = joinButtonPaint(button);
   if (editMode) {
     return (
@@ -1088,6 +1092,7 @@ function NextEventDock({
   accent,
   placed,
   editing = false,
+  picked = false,
   onOpen,
   onDismiss,
 }: {
@@ -1096,6 +1101,7 @@ function NextEventDock({
   accent: string;
   placed: "screen" | "preview";
   editing?: boolean;
+  picked?: boolean;
   onOpen: () => void;
   onDismiss: () => void;
 }) {
@@ -1124,7 +1130,7 @@ function NextEventDock({
   return (
     <aside
       onClick={editing ? onOpen : undefined}
-      className={`${placed === "preview" ? "absolute top-20 right-3 z-30 w-60" : "fixed right-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-[55] w-[12.5rem] sm:right-4 sm:bottom-4 sm:w-[min(100%-2rem,19rem)]"} rounded-2xl bg-slate-900 p-2.5 text-white shadow-2xl ring-2 ring-orange-400/50 sm:rounded-[1.5rem] sm:p-4 ${editing ? "cursor-pointer" : ""}`}
+      className={`${placed === "preview" ? "absolute top-20 right-3 z-30 w-60" : "fixed right-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-[55] w-[12.5rem] sm:right-4 sm:bottom-4 sm:w-[min(100%-2rem,19rem)]"} rounded-2xl bg-slate-900 p-2.5 text-white shadow-2xl sm:rounded-[1.5rem] sm:p-4 ${picked ? "ring-4 ring-orange-300 shadow-[0_0_0_4px_rgba(251,146,60,0.45)]" : "ring-2 ring-orange-400/50"} ${editing ? "cursor-pointer" : ""}`}
     >
       <div className="flex items-start justify-between gap-2">
         <p className="text-[10px] font-bold tracking-wide sm:text-xs" style={{ color: accent }}>{ui.nextLabel}</p>
@@ -1179,7 +1185,7 @@ function GameCard({
 }) {
   return (
     <article
-      className={`card-lift group h-full overflow-hidden rounded-[2rem] border bg-slate-800 ${picked ? "border-orange-400 ring-2 ring-orange-400" : "border-slate-700"} ${shown ? "await-deal inview" : "await-deal"}`}
+      className={`card-lift group h-full overflow-hidden rounded-[2rem] border bg-slate-800 transition ${picked ? "z-[1] border-orange-300 ring-4 ring-orange-400 shadow-[0_0_0_4px_rgba(251,146,60,0.4),0_18px_40px_rgba(251,146,60,0.28)]" : "border-slate-700"} ${shown ? "await-deal inview" : "await-deal"}`}
       style={{ ["--i" as string]: index }}
     >
       <div className="relative h-44 overflow-hidden bg-slate-900">
@@ -1244,7 +1250,7 @@ function EventCard({
 }) {
   const ended = eventEnded(event);
   return (
-    <article className={`overflow-hidden rounded-[2rem] bg-white shadow-sm ${picked ? "ring-2 ring-orange-500" : ""}`}>
+    <article className={`overflow-hidden rounded-[2rem] bg-white shadow-sm transition ${picked ? "z-[1] ring-4 ring-orange-500 shadow-[0_0_0_4px_rgba(249,115,22,0.22),0_16px_36px_rgba(249,115,22,0.16)]" : ""}`}>
       <div className={`relative h-56 bg-gradient-to-br ${event.tint} ${ended ? "opacity-70" : ""}`}>
         {event.coverUrl ? <img src={event.coverUrl} alt="" className="absolute inset-0 h-full w-full object-cover" /> : <span className="absolute inset-0 grid place-items-center text-6xl" aria-hidden>{event.emoji}</span>}
         <p className="absolute top-4 left-4 z-10 rounded-xl bg-white/80 px-3 py-2 text-sm font-black backdrop-blur" style={{ color: text }}>{event.badge}</p>

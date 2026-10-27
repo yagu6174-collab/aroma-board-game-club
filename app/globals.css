@@ -184,6 +184,21 @@ textarea:focus-visible {
   animation: fade-out var(--t-enter) var(--ease-snap) both;
 }
 
+@keyframes editor-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.35rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.editor-pane {
+  animation: editor-in var(--t-ui) var(--ease-snap) both;
+}
+
 .pad-tilt {
   transform: rotate(3deg);
   transition: transform var(--t-ui) var(--ease-snap);
@@ -251,7 +266,8 @@ html.dice-on * {
   .menu-drop,
   .tab-from-left,
   .tab-from-right,
-  .splash-out {
+  .splash-out,
+  .editor-pane {
     animation: none;
     clip-path: none;
     opacity: 1;
