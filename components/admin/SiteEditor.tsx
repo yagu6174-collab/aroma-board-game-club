@@ -421,8 +421,66 @@ function EditorForm({
     );
   }
 
+  if (selected?.startsWith("join-button:")) {
+    const activeId = selected.slice("join-button:".length);
+    const button = draft.joinButtons.find((item) => item.id === activeId);
+    if (button) {
+      const index = draft.joinButtons.findIndex((item) => item.id === button.id);
+      const label = button.text.trim() || "这个按钮";
+      return (
+        <FormShell title={button.text.trim() || "按钮"}>
+          <JoinButtonSwitcher buttons={draft.joinButtons} activeId={button.id} onSelect={onSelect} />
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <button type="button" className={moveClass} disabled={index <= 0} aria-label={`上移「${label}」`} onClick={() => onChange((current) => ({ ...current, joinButtons: moveJoinButtons(current.joinButtons, button.id, -1) }))}>
+              上移
+            </button>
+            <button
+              type="button"
+              className={moveClass}
+              disabled={index < 0 || index >= draft.joinButtons.length - 1}
+              aria-label={`下移「${label}」`}
+              onClick={() => onChange((current) => ({ ...current, joinButtons: moveJoinButtons(current.joinButtons, button.id, 1) }))}
+            >
+              下移
+            </button>
+            <span className="text-xs text-stone-500">从左到右第 {index + 1} 颗</span>
+          </div>
+          <JoinButtonEditor
+            key={button.id}
+            button={button}
+            onChange={(patch) =>
+              onChange((current) => ({
+                ...current,
+                joinButtons: current.joinButtons.map((item) => (item.id === button.id ? { ...item, ...patch } : item)),
+              }))
+            }
+          />
+          <div className="mt-5 flex flex-wrap gap-2">
+            <button type="button" className={quietClass} onClick={() => ask("要新增一个按钮吗？", () => insertJoinButton(onChange, onSelect))}>
+              加一个按钮
+            </button>
+            <button
+              type="button"
+              className={quietClass}
+              onClick={() =>
+                ask(`要删除「${label}」吗？`, () => {
+                  const next = draft.joinButtons.filter((item) => item.id !== button.id);
+                  const neighbor = next[index] ?? next[index - 1];
+                  onChange((current) => ({ ...current, joinButtons: current.joinButtons.filter((item) => item.id !== button.id) }));
+                  onSelect(neighbor ? `join-button:${neighbor.id}` : "join");
+                })
+              }
+            >
+              删除这个按钮
+            </button>
+          </div>
+          <p className="mt-3 text-xs leading-relaxed text-stone-500">点预览里的另一颗按钮会换到那一颗，不会跳走。要看网址，用「打开链接」。</p>
+        </FormShell>
+      );
+    }
+  }
+
   if (selected === "join" || selected?.startsWith("join-button:")) {
-    const activeId = selected.startsWith("join-button:") ? selected.slice("join-button:".length) : "";
     return (
       <FormShell title="加入我们">
         <Field label="标题">
@@ -431,18 +489,17 @@ function EditorForm({
         <Field label="正文">
           <textarea rows={5} value={draft.join} onChange={(input) => onChange({ ...draft, join: input.target.value })} className={fieldClass} />
         </Field>
-        <JoinButtonFields
+        <p className="mt-4 text-sm leading-relaxed text-stone-600">点预览里的一颗按钮，或点下面的名字，只编辑这一颗。</p>
+        <JoinButtonList
           buttons={draft.joinButtons}
-          activeId={activeId}
-          onChange={(joinButtons) => onChange((current) => ({ ...current, joinButtons }))}
           onSelect={onSelect}
-          ask={ask}
+          onMove={(id, dir) => onChange((current) => ({ ...current, joinButtons: moveJoinButtons(current.joinButtons, id, dir) }))}
         />
         <button type="button" className={`${quietClass} mt-4`} onClick={() => ask("要新增一个按钮吗？", () => insertJoinButton(onChange, onSelect))}>
           加一个按钮
         </button>
         <p className="mt-3 text-xs leading-relaxed text-stone-500">
-          点预览里的按钮会打开这一项的文字、颜色和链接，不会跳走。要查看网址，用「打开链接」。原来的邮箱、微信、WhatsApp、Instagram 和报名表格还连着页头图标、联系页和页头报名。删掉其中一颗，对应的地方也会空掉。新加的按钮只出现在这一块。
+          原来的邮箱、微信、WhatsApp、Instagram 和报名表格还连着页头图标、联系页和页头报名。删掉其中一颗，对应的地方也会空掉。新加的按钮只出现在这一块。
         </p>
       </FormShell>
     );
@@ -945,153 +1002,150 @@ function EventFields({ event, onChange }: { event: SiteEventDraft; onChange: (ne
   );
 }
 
-function JoinButtonFields({
+function moveJoinButtons(buttons: JoinButton[], id: string, dir: -1 | 1) {
+  const index = buttons.findIndex((button) => button.id === id);
+  const target = index + dir;
+  if (index < 0 || target < 0 || target >= buttons.length) return buttons;
+  const next = buttons.slice();
+  const [item] = next.splice(index, 1);
+  if (!item) return buttons;
+  next.splice(target, 0, item);
+  return next;
+}
+
+function JoinButtonSwitcher({
   buttons,
   activeId,
-  onChange,
   onSelect,
-  ask,
 }: {
   buttons: JoinButton[];
   activeId: string;
-  onChange: (next: JoinButton[]) => void;
   onSelect: (id: string) => void;
-  ask: (message: string, run: () => void) => void;
 }) {
-  useEffect(() => {
-    if (!activeId) return;
-    const card = document.getElementById(`join-button-card-${activeId}`);
-    if (!card) return;
-    card.scrollIntoView({ block: "nearest" });
-    if (card.contains(document.activeElement)) return;
-    const field = document.getElementById(`join-button-text-${activeId}`);
-    if (field instanceof HTMLInputElement) field.focus();
-  }, [activeId]);
-
-  function patch(id: string, next: Partial<JoinButton>) {
-    onChange(buttons.map((button) => (button.id === id ? { ...button, ...next } : button)));
-  }
-
-  function move(index: number, dir: -1 | 1) {
-    const target = index + dir;
-    if (target < 0 || target >= buttons.length) return;
-    const next = buttons.slice();
-    const [item] = next.splice(index, 1);
-    if (!item) return;
-    next.splice(target, 0, item);
-    onChange(next);
-  }
-
   return (
-    <>
+    <div className="mt-3 flex flex-wrap gap-2">
+      <button type="button" className={quietClass} onClick={() => onSelect("join")}>
+        标题和正文
+      </button>
+      {buttons.map((button) => (
+        <button
+          key={button.id}
+          type="button"
+          onClick={() => onSelect(`join-button:${button.id}`)}
+          className={`rounded-full px-3 py-1 text-xs font-bold ${button.id === activeId ? "bg-stone-900 text-white" : "border border-stone-300"}`}
+        >
+          {button.text.trim() || "未命名按钮"}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function JoinButtonList({
+  buttons,
+  onSelect,
+  onMove,
+}: {
+  buttons: JoinButton[];
+  onSelect: (id: string) => void;
+  onMove: (id: string, dir: -1 | 1) => void;
+}) {
+  if (!buttons.length) return <p className="mt-3 text-sm text-stone-500">还没有按钮。</p>;
+  return (
+    <ol className="mt-3 space-y-2" aria-label="加入我们的按钮">
       {buttons.map((button, index) => {
-        const active = button.id === activeId;
+        const label = button.text.trim() || "未命名按钮";
         return (
-          <fieldset
-            key={button.id}
-            id={`join-button-card-${button.id}`}
-            className={`mt-4 rounded-2xl border p-3 ${active ? "border-orange-500 ring-2 ring-orange-500" : "border-stone-200"}`}
-            onFocusCapture={() => {
-              if (!active) onSelect(`join-button:${button.id}`);
-            }}
-            onClick={(event) => {
-              const target = event.target;
-              if (!(target instanceof Element)) return;
-              if (target.closest("input, select, textarea, button, a, label")) return;
-              onSelect(`join-button:${button.id}`);
-            }}
-          >
-            <legend className="px-1 text-xs font-bold text-stone-500">{button.text.trim() || "按钮"}</legend>
-            <Field label="显示文字">
-              <input
-                id={`join-button-text-${button.id}`}
-                value={button.text}
-                onChange={(input) => patch(button.id, { text: input.target.value })}
-                className={fieldClass}
-              />
-            </Field>
-            <Field label="跳转链接">
-              <input
-                value={button.href}
-                onChange={(input) => patch(button.id, { href: input.target.value })}
-                placeholder="留空则不跳转"
-                spellCheck={false}
-                className={fieldClass}
-              />
-            </Field>
-            <button
-              type="button"
-              className={`${quietClass} mt-2 disabled:opacity-40`}
-              disabled={!button.href.trim()}
-              onClick={() => {
-                const href = button.href.trim();
-                if (!href) return;
-                window.open(href, "_blank", "noopener,noreferrer");
-              }}
-            >
-              打开链接
+          <li key={button.id} className="flex items-center gap-2 rounded-2xl border border-stone-200 bg-white p-2">
+            <button type="button" onClick={() => onSelect(`join-button:${button.id}`)} className="min-h-11 min-w-0 flex-1 truncate text-left text-sm font-bold">
+              <span className="mr-2 text-xs font-bold text-stone-400 tabular-nums">{index + 1}</span>
+              {label}
             </button>
-            <Field label="样式">
-              <select
-                value={button.style}
-                onChange={(input) => {
-                  const style = input.target.value as JoinButtonStyle;
-                  patch(button.id, {
-                    style,
-                    colorEnd: style === "gradient" && !button.colorEnd ? "#fb923c" : button.colorEnd,
-                  });
-                }}
-                className={fieldClass}
-              >
-                <option value="solid">纯色</option>
-                <option value="gradient">渐变</option>
-                <option value="glass">半透明</option>
-              </select>
-            </Field>
-            {button.style === "gradient" ? (
-              <>
-                <ColorField label="起始色" hint="从左到右的第一色" value={button.color} fallback="#a855f7" onChange={(color) => patch(button.id, { color })} />
-                <ColorField label="中间色" hint="留空则只有两端" value={button.colorMid} fallback="#ec4899" clearable onChange={(colorMid) => patch(button.id, { colorMid })} />
-                <ColorField label="结束色" hint="从左到右的最后一色" value={button.colorEnd} fallback="#fb923c" onChange={(colorEnd) => patch(button.id, { colorEnd })} />
-              </>
-            ) : (
-              <ColorField
-                label="背景色"
-                hint={button.style === "glass" ? "淡淡铺在深色底上" : "按钮的底色"}
-                value={button.color}
-                fallback={button.style === "glass" ? "#ffffff" : "#4f46e5"}
-                onChange={(color) => patch(button.id, { color })}
-              />
-            )}
-            <ColorField label="文字色" hint="按钮上的字" value={button.textColor} fallback="#ffffff" onChange={(textColor) => patch(button.id, { textColor })} />
-            <div className="mt-3 flex flex-wrap gap-2">
-              <button type="button" className={`${quietClass} disabled:opacity-40`} disabled={index === 0} onClick={() => move(index, -1)}>
-                上移
-              </button>
-              <button type="button" className={`${quietClass} disabled:opacity-40`} disabled={index === buttons.length - 1} onClick={() => move(index, 1)}>
-                下移
-              </button>
-              <button
-                type="button"
-                className={quietClass}
-                onClick={() =>
-                  ask(`要删除「${button.text.trim() || "这个按钮"}」吗？`, () => {
-                    const next = buttons.filter((item) => item.id !== button.id);
-                    onChange(next);
-                    if (active) {
-                      const neighbor = next[index] ?? next[index - 1];
-                      onSelect(neighbor ? `join-button:${neighbor.id}` : "join");
-                    }
-                  })
-                }
-              >
-                删除这个按钮
-              </button>
-            </div>
-          </fieldset>
+            <button type="button" className={moveClass} disabled={index === 0} aria-label={`上移「${label}」`} onClick={() => onMove(button.id, -1)}>
+              上移
+            </button>
+            <button type="button" className={moveClass} disabled={index === buttons.length - 1} aria-label={`下移「${label}」`} onClick={() => onMove(button.id, 1)}>
+              下移
+            </button>
+          </li>
         );
       })}
-    </>
+    </ol>
+  );
+}
+
+function JoinButtonEditor({ button, onChange }: { button: JoinButton; onChange: (patch: Partial<JoinButton>) => void }) {
+  useEffect(() => {
+    const field = document.getElementById(`join-button-text-${button.id}`);
+    if (field instanceof HTMLInputElement) field.focus();
+  }, [button.id]);
+
+  return (
+    <fieldset id={`join-button-card-${button.id}`} className="mt-4 rounded-2xl border border-orange-500 p-3 ring-2 ring-orange-500">
+      <legend className="px-1 text-xs font-bold text-stone-500">{button.text.trim() || "按钮"}</legend>
+      <Field label="显示文字">
+        <input
+          id={`join-button-text-${button.id}`}
+          value={button.text}
+          onChange={(input) => onChange({ text: input.target.value })}
+          className={fieldClass}
+        />
+      </Field>
+      <Field label="跳转链接">
+        <input
+          value={button.href}
+          onChange={(input) => onChange({ href: input.target.value })}
+          placeholder="留空则不跳转"
+          spellCheck={false}
+          className={fieldClass}
+        />
+      </Field>
+      <button
+        type="button"
+        className={`${quietClass} mt-2 disabled:opacity-40`}
+        disabled={!button.href.trim()}
+        onClick={() => {
+          const href = button.href.trim();
+          if (!href) return;
+          window.open(href, "_blank", "noopener,noreferrer");
+        }}
+      >
+        打开链接
+      </button>
+      <Field label="样式">
+        <select
+          value={button.style}
+          onChange={(input) => {
+            const style = input.target.value as JoinButtonStyle;
+            onChange({
+              style,
+              colorEnd: style === "gradient" && !button.colorEnd ? "#fb923c" : button.colorEnd,
+            });
+          }}
+          className={fieldClass}
+        >
+          <option value="solid">纯色</option>
+          <option value="gradient">渐变</option>
+          <option value="glass">半透明</option>
+        </select>
+      </Field>
+      {button.style === "gradient" ? (
+        <>
+          <ColorField label="起始色" hint="从左到右的第一色" value={button.color} fallback="#a855f7" onChange={(color) => onChange({ color })} />
+          <ColorField label="中间色" hint="留空则只有两端" value={button.colorMid} fallback="#ec4899" clearable onChange={(colorMid) => onChange({ colorMid })} />
+          <ColorField label="结束色" hint="从左到右的最后一色" value={button.colorEnd} fallback="#fb923c" onChange={(colorEnd) => onChange({ colorEnd })} />
+        </>
+      ) : (
+        <ColorField
+          label="背景色"
+          hint={button.style === "glass" ? "淡淡铺在深色底上" : "按钮的底色"}
+          value={button.color}
+          fallback={button.style === "glass" ? "#ffffff" : "#4f46e5"}
+          onChange={(color) => onChange({ color })}
+        />
+      )}
+      <ColorField label="文字色" hint="按钮上的字" value={button.textColor} fallback="#ffffff" onChange={(textColor) => onChange({ textColor })} />
+    </fieldset>
   );
 }
 
