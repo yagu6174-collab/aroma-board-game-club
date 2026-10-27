@@ -3,6 +3,7 @@ import { chromeKeys, type ChromeKey } from "@/data/uiChrome";
 import { cssColor } from "@/lib/color";
 import { finishedEventSummary } from "@/lib/eventStatus";
 import { canonicalFormId } from "@/lib/formSync";
+import { linksFromJoinButtons, resolveJoinButtons, type JoinButton } from "@/lib/joinButtons";
 
 export type SiteGameDraft = {
   id: string;
@@ -93,7 +94,7 @@ export type SiteLinksDraft = {
 export type SiteChrome = Record<ChromeKey, string>;
 
 export type SiteDraft = {
-  revision: 5;
+  revision: 6;
   claim: string;
   about: string;
   join: string;
@@ -112,6 +113,7 @@ export type SiteDraft = {
   games: SiteGameDraft[];
   events: SiteEventDraft[];
   links: SiteLinksDraft;
+  joinButtons: JoinButton[];
 };
 
 const KINDS: GameKind[] = ["party", "strategy", "deduce", "other"];
@@ -182,7 +184,7 @@ function linkOf(value: unknown, fallback: ClubLink): ClubLink {
 
 export function siteDraftFrom(content: ClubContent): SiteDraft {
   return {
-    revision: 5,
+    revision: 6,
     claim: content.hero.intro,
     about: content.about.p2,
     join: content.join,
@@ -258,13 +260,8 @@ export function siteDraftFrom(content: ClubContent): SiteDraft {
         capacity: session.capacity,
       })),
     })),
-    links: {
-      email: { ...content.links.email },
-      wechat: { ...content.links.wechat },
-      whatsapp: { ...content.links.whatsapp },
-      instagram: { ...content.links.instagram },
-      form: { ...content.links.form },
-    },
+    links: linksFromJoinButtons(content.joinButtons),
+    joinButtons: content.joinButtons.map((button) => ({ ...button })),
   };
 }
 
@@ -313,18 +310,14 @@ export function applySiteDraft(base: ClubContent, draft: SiteDraft): ClubContent
       })),
     };
   });
+  const links = linksFromJoinButtons(draft.joinButtons);
   return {
     ...base,
-    whatsappUrl: draft.links.whatsapp.href,
-    instagramUrl: draft.links.instagram.href,
-    signupUrl: draft.links.form.href,
-    links: {
-      email: { ...draft.links.email },
-      wechat: { ...draft.links.wechat },
-      whatsapp: { ...draft.links.whatsapp },
-      instagram: { ...draft.links.instagram },
-      form: { ...draft.links.form },
-    },
+    whatsappUrl: links.whatsapp.href,
+    instagramUrl: links.instagram.href,
+    signupUrl: links.form.href,
+    links,
+    joinButtons: draft.joinButtons.map((button) => ({ ...button })),
     name: draft.name,
     enName: draft.enName,
     logoUrl: draft.logoUrl,
@@ -375,8 +368,11 @@ export function normalizeSiteDraft(input: unknown, base: ClubContent): SiteDraft
   const heroCopyRaw = asRecord(raw.heroCopy);
   const colorsRaw = asRecord(raw.colors);
   const chromeRaw = asRecord(raw.chrome);
+  const linksInput = normalizeLinks(linksRaw, contact, seed.links);
+  const joinButtons = resolveJoinButtons(raw.joinButtons, linksInput);
+  const links = linksFromJoinButtons(joinButtons);
   return {
-    revision: 5,
+    revision: 6,
     claim: text(raw.claim, seed.claim),
     about: text(raw.about, seed.about),
     join: text(raw.join, seed.join),
@@ -427,7 +423,8 @@ export function normalizeSiteDraft(input: unknown, base: ClubContent): SiteDraft
     },
     games: gameRows ? normalizeGames(gameRows, seed.games) : seed.games,
     events: eventRows ? normalizeEvents(eventRows, seed.events) : seed.events,
-    links: normalizeLinks(linksRaw, contact, seed.links),
+    links,
+    joinButtons,
   };
 }
 

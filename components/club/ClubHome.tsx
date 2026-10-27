@@ -7,6 +7,7 @@ import DiceCursor from "@/components/club/DiceCursor";
 import HeroDots from "@/components/club/HeroDots";
 import type { ClubContent, ClubEvent, ClubGame, GameKind } from "@/data/club";
 import { cssColor, fallbackColors } from "@/lib/color";
+import { joinButtonPaint, type JoinButton } from "@/lib/joinButtons";
 import type { Lang } from "@/lib/types";
 
 function LocalLabLink() {
@@ -91,6 +92,7 @@ export default function ClubHome({
   selected = null,
   onSelect,
   onLibraryAdd,
+  onJoinAdd,
 }: {
   content: ClubContent;
   lang: Lang;
@@ -98,6 +100,7 @@ export default function ClubHome({
   selected?: string | null;
   onSelect?: (id: string) => void;
   onLibraryAdd?: () => void;
+  onJoinAdd?: () => void;
 }) {
   const ui = content.ui;
   const paint = heroPaint(content);
@@ -359,10 +362,10 @@ export default function ClubHome({
               <span className="hidden text-xs font-normal sm:block" style={{ color: paint.accent }}>{content.enName}</span>
             </span>
           </a>
-          <RoundIcon href={content.links.instagram.href} label={content.links.instagram.text || "Instagram"}>
+          <RoundIcon href={content.links.instagram.href} label={content.links.instagram.text || "Instagram"} inert={editMode}>
             <InstagramIcon />
           </RoundIcon>
-          <RoundIcon href={content.links.whatsapp.href} label={content.links.whatsapp.text || "WhatsApp"}>
+          <RoundIcon href={content.links.whatsapp.href} label={content.links.whatsapp.text || "WhatsApp"} inert={editMode}>
             <WhatsappIcon />
           </RoundIcon>
           <nav className={`ml-auto hidden items-center gap-5 lg:flex ${mark("nav")} ${editMode ? "cursor-pointer" : ""}`} {...editProps("nav")}>
@@ -645,11 +648,24 @@ export default function ClubHome({
                 {content.join}
               </p>
               <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-                <ChannelButton link={content.links.email} className="border border-white/30 bg-white/10" />
-                <ChannelButton link={content.links.wechat} className="bg-emerald-600" />
-                <ChannelButton link={content.links.whatsapp} className="bg-green-500" />
-                <ChannelButton link={content.links.instagram} className="bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400" />
-                <ChannelButton link={content.links.form} className="bg-indigo-600" />
+                {content.joinButtons.map((button) => (
+                  <JoinLink
+                    key={button.id}
+                    button={button}
+                    editMode={editMode}
+                    picked={editMode && selected === `join-button:${button.id}`}
+                    onEdit={() => choose(`join-button:${button.id}`)}
+                  />
+                ))}
+                {editMode && onJoinAdd ? (
+                  <button
+                    type="button"
+                    onClick={onJoinAdd}
+                    className="inline-flex min-h-11 items-center justify-center rounded-xl border border-dashed border-white/50 px-6 text-sm font-bold text-white"
+                  >
+                    加一个按钮
+                  </button>
+                ) : null}
               </div>
             </div>
           </div>
@@ -977,8 +993,10 @@ function Welcome({ content, onClose, onJump }: { content: ClubContent; onClose: 
         <h2 id="welcome-title" className="pr-10 text-2xl font-black" style={{ color: content.colors.text }}>{ui.welcomeTitle}</h2>
         <p className="mt-3 leading-relaxed" style={{ color: content.colors.body }}>{content.welcome}</p>
         <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <ChannelButton link={content.links.whatsapp} className="bg-green-500" />
-          <ChannelButton link={content.links.instagram} className="bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400" />
+          {(["whatsapp", "instagram"] as const).map((slot) => {
+            const button = content.joinButtons.find((item) => item.slot === slot);
+            return button ? <JoinLink key={button.id} button={button} /> : null;
+          })}
           <button type="button" onClick={() => onJump("about")} className="inline-flex min-h-11 items-center justify-center rounded-xl border-2 border-slate-300 font-bold">
             {ui.navAbout}
           </button>
@@ -991,9 +1009,9 @@ function Welcome({ content, onClose, onJump }: { content: ClubContent; onClose: 
   );
 }
 
-function RoundIcon({ href, label, children }: { href: string; label: string; children: React.ReactNode }) {
+function RoundIcon({ href, label, children, inert = false }: { href: string; label: string; children: React.ReactNode; inert?: boolean }) {
   const className = "inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200";
-  if (!href.trim()) {
+  if (inert || !href.trim()) {
     return (
       <span aria-label={label} className={className}>
         {children}
@@ -1007,13 +1025,41 @@ function RoundIcon({ href, label, children }: { href: string; label: string; chi
   );
 }
 
-function ChannelButton({ link, className }: { link: { text: string; href: string }; className: string }) {
-  if (!link.text.trim()) return null;
-  const box = `inline-flex min-h-11 items-center justify-center rounded-xl px-6 font-bold text-white ${className}`;
-  if (!link.href.trim()) return <span className={box}>{link.text}</span>;
+function JoinLink({
+  button,
+  editMode = false,
+  picked = false,
+  onEdit,
+}: {
+  button: JoinButton;
+  editMode?: boolean;
+  picked?: boolean;
+  onEdit?: () => void;
+}) {
+  const label = button.text.trim();
+  if (!editMode && !label) return null;
+  const box = `inline-flex min-h-11 items-center justify-center rounded-xl px-6 font-bold text-white ${picked ? "ring-2 ring-orange-500 ring-offset-2" : ""} ${editMode ? "cursor-pointer" : ""}`;
+  const style = joinButtonPaint(button);
+  if (editMode) {
+    return (
+      <button
+        type="button"
+        className={box}
+        style={style}
+        onClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          onEdit?.();
+        }}
+      >
+        {label || "未命名按钮"}
+      </button>
+    );
+  }
+  if (!button.href.trim()) return <span className={box} style={style}>{label}</span>;
   return (
-    <a href={link.href} target="_blank" rel="noreferrer" className={box}>
-      {link.text}
+    <a href={button.href} target="_blank" rel="noreferrer" className={box} style={style}>
+      {label}
     </a>
   );
 }

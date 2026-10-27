@@ -1,5 +1,6 @@
 import { fallbackColors } from "@/lib/color";
 import { chromeKeys } from "@/data/uiChrome";
+import { joinButtonsFromLinks } from "@/lib/joinButtons";
 import aboutDoc from "@/content/about.json";
 import articlesDoc from "@/content/articles.json";
 import contactDoc from "@/content/contact.json";
@@ -256,17 +257,20 @@ function articleBody(slug: string) {
 
 const digits = contactDoc.whatsapp.replace(/\D/g, "");
 
+const clubLinks = {
+  email: { text: contactDoc.email, href: contactDoc.email.includes("@") ? `mailto:${contactDoc.email}` : "" },
+  wechat: { text: contactDoc.wechat, href: "" },
+  whatsapp: { text: "加入 WhatsApp", href: digits ? `https://wa.me/${digits}` : "" },
+  instagram: { text: "Instagram", href: contactDoc.instagram },
+  form: { text: "报名表格", href: "" },
+};
+
 export const clubContent = {
   name: "馨香桌游社",
   enName: "Aroma Board Game Club",
   logoUrl: "",
-  links: {
-    email: { text: contactDoc.email, href: contactDoc.email.includes("@") ? `mailto:${contactDoc.email}` : "" },
-    wechat: { text: contactDoc.wechat, href: "" },
-    whatsapp: { text: "加入 WhatsApp", href: digits ? `https://wa.me/${digits}` : "" },
-    instagram: { text: "Instagram", href: contactDoc.instagram },
-    form: { text: "报名表格", href: "" },
-  },
+  links: clubLinks,
+  joinButtons: joinButtonsFromLinks(clubLinks),
   signupUrl: "",
   whatsappUrl: digits ? `https://wa.me/${digits}` : "",
   instagramUrl: contactDoc.instagram,
