@@ -33,7 +33,7 @@ export default function ClubFooter({
   className?: string;
 }) {
   const label = captions(lang);
-  const address = contacts.address.trim();
+  const address = contacts.address.trim().replace(/\s+/g, " ");
   const mapUrl = safeMapUrl(contacts.mapUrl);
   const mapLabel = contacts.mapLabel.trim();
   const showMap = Boolean(mapUrl && mapLabel);
@@ -52,37 +52,37 @@ export default function ClubFooter({
       }
     >
       <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
-        <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-8 sm:gap-y-4">
+        <div className="flex min-w-0 flex-col items-stretch gap-4 md:flex-row md:flex-nowrap md:items-center md:gap-6 lg:gap-8">
           <div className="flex shrink-0 items-center gap-3">
             <Mark logoUrl={logoUrl} />
-            <p className="text-lg font-black text-white">{name}</p>
+            <p className="whitespace-nowrap text-lg font-black text-white">{name}</p>
           </div>
-          <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-            {address ? (
-              <div className="flex min-w-0 items-center gap-3">
-                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/10 text-orange-400 ring-1 ring-white/10">
-                  <PinIcon />
-                </span>
-                <span className="min-w-0 text-left">
-                  <span className="block text-[11px] font-bold tracking-wide text-slate-400">{label.address}</span>
-                  <span className="block text-sm font-bold leading-6 break-words whitespace-pre-line text-slate-100">{address}</span>
-                </span>
-              </div>
-            ) : null}
-            {showMap ? (
-              <a
-                href={mapUrl}
-                target="_blank"
-                rel="noreferrer"
-                className={`inline-flex min-h-11 w-full shrink-0 items-center justify-center gap-2 rounded-full bg-orange-500 px-5 text-sm font-black text-white transition hover:bg-orange-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300 sm:w-auto ${editMode ? "pointer-events-none" : ""}`}
-                tabIndex={editMode ? -1 : undefined}
-              >
+          {address ? (
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/10 text-orange-400 ring-1 ring-white/10">
                 <PinIcon />
-                {mapLabel}
-                <span className="sr-only">{label.newWindow}</span>
-              </a>
-            ) : null}
-          </div>
+              </span>
+              <span className="min-w-0 text-left">
+                <span className="block truncate text-[11px] font-bold tracking-wide text-slate-400">{label.address}</span>
+                <span className="block truncate text-sm font-bold leading-6 text-slate-100" title={address}>
+                  {address}
+                </span>
+              </span>
+            </div>
+          ) : null}
+          {showMap ? (
+            <a
+              href={mapUrl}
+              target="_blank"
+              rel="noreferrer"
+              className={`inline-flex min-h-11 w-full shrink-0 items-center justify-center gap-2 rounded-full bg-orange-500 px-5 text-sm font-black whitespace-nowrap text-white transition hover:bg-orange-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300 md:w-auto ${editMode ? "pointer-events-none" : ""}`}
+              tabIndex={editMode ? -1 : undefined}
+            >
+              <PinIcon />
+              {mapLabel}
+              <span className="sr-only">{label.newWindow}</span>
+            </a>
+          ) : null}
         </div>
         {copyright.trim() ? (
           <p className="mt-8 border-t border-white/10 pt-5 text-center text-sm" style={{ color: metaColor ?? "#64748b" }}>
