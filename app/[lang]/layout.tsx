@@ -29,7 +29,6 @@ export default async function LangLayout({
         name: club.name,
         logoUrl: club.logoUrl,
         copyright: club.footer,
-        contacts: club.footerContacts,
       }}
     >
       {children}
