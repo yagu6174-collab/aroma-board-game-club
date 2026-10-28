@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useId, useMemo, useRef, useState, type CSSProperties, type FormEvent, type ReactNode } from "react";
+import ClubFooter from "@/components/club/ClubFooter";
 import DiceCursor from "@/components/club/DiceCursor";
 import HeroDots from "@/components/club/HeroDots";
 import { shelfCardStyle, useShelfDrag } from "@/components/club/useShelfDrag";
@@ -692,15 +693,17 @@ export default function ClubHome({
         </section>
       </main>
 
-      <footer className={`bg-slate-950 py-12 text-center text-slate-300 ${mark("footer")} ${editMode ? "cursor-pointer" : ""}`} {...editProps("footer")}>
-        <p className="text-lg font-black text-white">{content.name}</p>
-        <div className="mt-4 flex flex-wrap justify-center gap-6 text-sm font-bold">
-          <a href="#about" className={`inline-flex min-h-11 items-center ${editMode ? "pointer-events-none" : ""}`}>{ui.navAbout}</a>
-          <a href="#games" className={`inline-flex min-h-11 items-center ${editMode ? "pointer-events-none" : ""}`}>{ui.navGames}</a>
-          <a href="#join" className={`inline-flex min-h-11 items-center ${editMode ? "pointer-events-none" : ""}`}>{ui.navJoin}</a>
-        </div>
-        <p className="mt-6 text-sm" style={{ color: paint.meta }}>{content.footer}</p>
-      </footer>
+      <ClubFooter
+        name={content.name}
+        logoUrl={content.logoUrl}
+        copyright={content.footer}
+        contacts={content.footerContacts}
+        lang={lang}
+        metaColor={paint.meta}
+        editMode={editMode}
+        picked={editMode && selected === "footer"}
+        onEdit={() => choose("footer")}
+      />
 
       {library ? (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900 text-white">

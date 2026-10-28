@@ -1,5 +1,6 @@
 import { fallbackColors } from "@/lib/color";
 import { chromeKeys } from "@/data/uiChrome";
+import type { FooterContacts } from "@/lib/footerLinks";
 import { joinButtonsFromLinks } from "@/lib/joinButtons";
 import aboutDoc from "@/content/about.json";
 import articlesDoc from "@/content/articles.json";
@@ -257,6 +258,17 @@ function articleBody(slug: string) {
 
 const digits = contactDoc.whatsapp.replace(/\D/g, "");
 
+function venueFrom(hint: string) {
+  const sentence = hint.split("。")[0]?.replace(/^聚会在/, "").trim() ?? "";
+  return sentence || "九龙观塘鸿图道 22 号俊汇中心";
+}
+
+const footerContacts: FooterContacts = {
+  address: venueFrom(contactDoc.hint),
+  mapLabel: "查看地图",
+  mapUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent("Elite Centre, 22 Hung To Road, Kwun Tong, Hong Kong")}`,
+};
+
 const clubLinks = {
   email: { text: contactDoc.email, href: contactDoc.email.includes("@") ? `mailto:${contactDoc.email}` : "" },
   wechat: { text: contactDoc.wechat, href: "" },
@@ -294,6 +306,7 @@ export const clubContent = {
   borrowRules:
     "一款一盒。最长 7 天（占位，可替换）。押金待定（可替换）。提交后只在这一层显示已收到，等待社团审核，不会写入后台。联系 WhatsApp +852 6462 3779，微信 Aroma3779。",
   footer: "2026馨香桌游社",
+  footerContacts,
   colors: clubColors,
   topics: [
     "你最近一次笑出声，是因为什么？",

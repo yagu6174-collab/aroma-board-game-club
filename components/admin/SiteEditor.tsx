@@ -547,7 +547,7 @@ function EditorForm({
 
   if (selected === "nav") {
     return (
-      <FormShell title="导航" hint="页头、页脚和欢迎窗里的栏目名共用这几句。手机上的菜单按钮读「菜单」。" scrollKey={key}>
+      <FormShell title="导航" hint="页头和欢迎窗里的栏目名共用这几句。手机上的菜单按钮读「菜单」。" scrollKey={key}>
         <FormGroup title="文案">
           <ChromeFields
             draft={draft}
@@ -567,15 +567,38 @@ function EditorForm({
   }
 
   if (selected === "footer") {
+    const contacts = draft.footerContacts;
+    const patchContacts = (next: Partial<typeof contacts>) => onChange({ ...draft, footerContacts: { ...contacts, ...next } });
     return (
-      <FormShell title="页脚" hint="社团名用标志里的中文名。关于我们、桌游库、加入我们用导航里的字。英文页仍显示这行原文。" scrollKey={key}>
+      <FormShell
+        title="页脚"
+        hint="社团名用标志里的中文名。地点和地图按钮排在标志那一行，下面是版权行。英文页仍显示这些原文。"
+        scrollKey={key}
+      >
         <FormGroup title="文案">
           <Field label="版权行">
             <textarea rows={3} value={draft.footer} onChange={(input) => onChange({ ...draft, footer: input.target.value })} className={fieldClass} />
           </Field>
-          <button type="button" className={`${quietClass} mt-3`} onClick={() => onSelect("nav")}>
-            改导航文字
-          </button>
+        </FormGroup>
+        <FormGroup title="地点">
+          <Field label="地点">
+            <textarea rows={3} value={contacts.address} onChange={(input) => patchContacts({ address: input.target.value })} className={fieldClass} />
+          </Field>
+        </FormGroup>
+        <FormGroup title="链接">
+          <Field label="地图按钮">
+            <input value={contacts.mapLabel} onChange={(input) => patchContacts({ mapLabel: input.target.value })} className={fieldClass} />
+          </Field>
+          <Field label="地图链接">
+            <input
+              value={contacts.mapUrl}
+              onChange={(input) => patchContacts({ mapUrl: input.target.value })}
+              placeholder="https:// 或 geo:"
+              spellCheck={false}
+              className={fieldClass}
+            />
+          </Field>
+          <p className="mt-2 text-xs leading-relaxed text-stone-500">改地点时，把地图链接里的地址一并换成新的。留空按钮文字或链接，按钮就不显示。</p>
         </FormGroup>
       </FormShell>
     );
