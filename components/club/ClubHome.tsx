@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useId, useMemo, useRef, useState, type CSSProperties, type FormEvent, type ReactNode } from "react";
 import ClubFooter from "@/components/club/ClubFooter";
+import VenueCluster from "@/components/club/VenueCluster";
 import DiceCursor from "@/components/club/DiceCursor";
 import HeroDots from "@/components/club/HeroDots";
 import { shelfCardStyle, useShelfDrag } from "@/components/club/useShelfDrag";
@@ -668,25 +669,34 @@ export default function ClubHome({
               >
                 {content.join}
               </p>
-              <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-                {content.joinButtons.map((button) => (
-                  <JoinLink
-                    key={button.id}
-                    button={button}
-                    editMode={editMode}
-                    picked={editMode && selected === `join-button:${button.id}`}
-                    onEdit={() => choose(`join-button:${button.id}`)}
-                  />
-                ))}
-                {editMode && onJoinAdd ? (
-                  <button
-                    type="button"
-                    onClick={onJoinAdd}
-                    className="inline-flex min-h-11 items-center justify-center rounded-xl border border-dashed border-white/50 px-6 text-sm font-bold text-white"
-                  >
-                    加一个按钮
-                  </button>
-                ) : null}
+              <div className="mt-8 flex w-full flex-col items-stretch gap-4 lg:flex-row lg:flex-nowrap lg:items-center lg:justify-center">
+                <div className="flex min-w-0 flex-col items-stretch justify-center gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-center">
+                  {content.joinButtons.map((button) => (
+                    <JoinLink
+                      key={button.id}
+                      button={button}
+                      editMode={editMode}
+                      picked={editMode && selected === `join-button:${button.id}`}
+                      onEdit={() => choose(`join-button:${button.id}`)}
+                    />
+                  ))}
+                  {editMode && onJoinAdd ? (
+                    <button
+                      type="button"
+                      onClick={onJoinAdd}
+                      className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl border border-dashed border-white/50 px-6 text-sm font-bold text-white"
+                    >
+                      加一个按钮
+                    </button>
+                  ) : null}
+                </div>
+                <VenueCluster
+                  contacts={content.footerContacts}
+                  lang={lang}
+                  editMode={editMode}
+                  picked={editMode && selected === "venue"}
+                  onEdit={() => choose("venue")}
+                />
               </div>
             </div>
           </div>
@@ -697,8 +707,6 @@ export default function ClubHome({
         name={content.name}
         logoUrl={content.logoUrl}
         copyright={content.footer}
-        contacts={content.footerContacts}
-        lang={lang}
         metaColor={paint.meta}
         editMode={editMode}
         picked={editMode && selected === "footer"}

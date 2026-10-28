@@ -540,6 +540,9 @@ function EditorForm({
           <button type="button" className={`${quietClass} mt-3`} onClick={() => ask("要新增一个按钮吗？", () => insertJoinButton(onChange, onSelect))}>
             加一个按钮
           </button>
+          <button type="button" className={`${quietClass} mt-3`} onClick={() => onSelect("venue")}>
+            改地点和地图
+          </button>
         </FormGroup>
       </FormShell>
     );
@@ -566,20 +569,15 @@ function EditorForm({
     );
   }
 
-  if (selected === "footer") {
+  if (selected === "venue") {
     const contacts = draft.footerContacts;
     const patchContacts = (next: Partial<typeof contacts>) => onChange({ ...draft, footerContacts: { ...contacts, ...next } });
     return (
       <FormShell
-        title="页脚"
-        hint="社团名用标志里的中文名。地点和地图按钮排在标志那一行，下面是版权行。英文页仍显示这些原文。"
+        title="地点和地图"
+        hint="这一块排在加入我们的按钮右边。改地点时，把地图链接里的地址一并换成新的。留空按钮文字或链接，按钮就不显示。英文页仍显示这些原文。"
         scrollKey={key}
       >
-        <FormGroup title="文案">
-          <Field label="版权行">
-            <textarea rows={3} value={draft.footer} onChange={(input) => onChange({ ...draft, footer: input.target.value })} className={fieldClass} />
-          </Field>
-        </FormGroup>
         <FormGroup title="地点">
           <Field label="地点">
             <textarea rows={3} value={contacts.address} onChange={(input) => patchContacts({ address: input.target.value })} className={fieldClass} />
@@ -599,6 +597,24 @@ function EditorForm({
             />
           </Field>
           <p className="mt-2 text-xs leading-relaxed text-stone-500">改地点时，把地图链接里的地址一并换成新的。留空按钮文字或链接，按钮就不显示。</p>
+        </FormGroup>
+      </FormShell>
+    );
+  }
+
+  if (selected === "footer") {
+    return (
+      <FormShell title="页脚" hint="标志和社团名跟版权行同一行。社团名用标志里的中文名。英文页仍显示这行原文。" scrollKey={key}>
+        <FormGroup title="文案">
+          <Field label="版权行">
+            <textarea rows={3} value={draft.footer} onChange={(input) => onChange({ ...draft, footer: input.target.value })} className={fieldClass} />
+          </Field>
+          <button type="button" className={`${quietClass} mt-3`} onClick={() => onSelect("venue")}>
+            改地点和地图
+          </button>
+          <button type="button" className={`${quietClass} mt-3`} onClick={() => onSelect("brand")}>
+            改标志和名称
+          </button>
         </FormGroup>
       </FormShell>
     );
@@ -801,6 +817,7 @@ function EditorForm({
             ["games-copy", "桌游区文字"],
             ["news-copy", "活动区文字"],
             ["join", "加入我们"],
+            ["venue", "地点和地图"],
             ["footer", "页脚"],
             ["next", "下一场"],
             ["welcome", "欢迎窗"],

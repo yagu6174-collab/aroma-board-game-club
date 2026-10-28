@@ -5,7 +5,6 @@ import { useEffect } from "react";
 import DotField from "@/components/DotField";
 import ClubFooter from "@/components/club/ClubFooter";
 import SiteHeader from "@/components/SiteHeader";
-import type { FooterContacts } from "@/lib/footerLinks";
 import type { Chrome } from "@/lib/nav";
 import type { Lang } from "@/lib/types";
 
@@ -25,7 +24,6 @@ export default function SiteFrame({
     name: string;
     logoUrl: string;
     copyright: string;
-    contacts: FooterContacts;
   };
   children: React.ReactNode;
 }) {
@@ -49,8 +47,6 @@ export default function SiteFrame({
         name={footer.name}
         logoUrl={footer.logoUrl}
         copyright={footer.copyright}
-        contacts={footer.contacts}
-        lang={lang}
       />
     </div>
   );
