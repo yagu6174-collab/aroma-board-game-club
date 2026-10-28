@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { mergeGoogleNotices } from "@/lib/formSync";
 
 export type GoogleNotice = { text: string; warn: boolean };
 
@@ -29,11 +30,12 @@ export default function GoogleFormsPanel({
     const body = (await res.json().catch(() => null)) as SyncResponse | null;
     setBusy("");
     if (!res.ok || !body) {
-      setNotes([{ text: "同步没有完成，报名人数保持原数字。", warn: true }]);
+      setNotes((current) => mergeGoogleNotices(current, [{ text: "同步没有完成，报名人数保持原数字。", warn: true }]));
       return;
     }
     if (typeof body.connected === "boolean") setLinked(body.connected);
-    setNotes(Array.isArray(body.messages) ? body.messages : []);
+    const incoming = Array.isArray(body.messages) ? body.messages : [];
+    setNotes((current) => mergeGoogleNotices(current, incoming));
     if (Array.isArray(body.updates) && body.updates.length) onSynced(body.updates);
   }
 

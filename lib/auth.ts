@@ -49,7 +49,12 @@ export const sessionCookie = {
   maxAge: WEEK,
 };
 
-export async function isAuthed() {
+export async function currentSessionToken() {
   const jar = await cookies();
-  return verifyToken(jar.get("session")?.value);
+  const token = jar.get("session")?.value ?? "";
+  return verifyToken(token) ? token : "";
+}
+
+export async function isAuthed() {
+  return Boolean(await currentSessionToken());
 }
