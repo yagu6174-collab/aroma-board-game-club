@@ -703,11 +703,6 @@ export default function ClubHome({
         editMode={editMode}
         picked={editMode && selected === "footer"}
         onEdit={() => choose("footer")}
-        links={[
-          { href: "#about", label: ui.navAbout },
-          { href: "#games", label: ui.navGames },
-          { href: "#join", label: ui.navJoin },
-        ]}
       />
 
       {library ? (

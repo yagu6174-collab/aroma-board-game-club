@@ -34,7 +34,6 @@ export default function SiteFrame({
   }, [lang]);
   const pathname = usePathname();
   const onHome = pathname === `/${lang}`;
-  const place = (id: string) => (onHome ? `#${id}` : `/${lang}#${id}`);
 
   if (onHome) {
     return <div className="min-h-screen bg-slate-50 text-slate-900">{children}</div>;
@@ -52,12 +51,6 @@ export default function SiteFrame({
         copyright={footer.copyright}
         contacts={footer.contacts}
         lang={lang}
-        links={[
-          { href: place("about"), label: chrome.about },
-          { href: place("games"), label: chrome.games },
-          { href: place("events"), label: chrome.events },
-          { href: place("contact"), label: chrome.contact },
-        ]}
       />
     </div>
   );

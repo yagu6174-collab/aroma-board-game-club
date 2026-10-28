@@ -3,12 +3,10 @@ import type { Lang } from "@/lib/types";
 
 const HEX = ["#f97316", "#22c55e", "#3b82f6", "#a855f7", "#ec4899", "#eab308", "#14b8a6", "#6366f1", "#fb7185"];
 
-export type ClubFooterLink = { href: string; label: string };
-
 function captions(lang: Lang) {
-  if (lang === "en") return { nav: "Footer", address: "Venue", newWindow: " (opens in a new window)" };
-  if (lang === "zh-Hant") return { nav: "頁腳", address: "地點", newWindow: "（新視窗）" };
-  return { nav: "页脚", address: "地点", newWindow: "（新窗口）" };
+  if (lang === "en") return { address: "Venue", newWindow: " (opens in a new window)" };
+  if (lang === "zh-Hant") return { address: "地點", newWindow: "（新視窗）" };
+  return { address: "地点", newWindow: "（新窗口）" };
 }
 
 export default function ClubFooter({
@@ -16,7 +14,6 @@ export default function ClubFooter({
   logoUrl,
   copyright,
   contacts,
-  links,
   lang,
   metaColor,
   editMode = false,
@@ -28,7 +25,6 @@ export default function ClubFooter({
   logoUrl?: string;
   copyright: string;
   contacts: FooterContacts;
-  links: readonly ClubFooterLink[];
   lang: Lang;
   metaColor?: string;
   editMode?: boolean;
@@ -56,51 +52,37 @@ export default function ClubFooter({
       }
     >
       <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between lg:gap-10">
-          <div className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-center lg:gap-8">
-            <div className="flex shrink-0 items-center gap-3">
-              <Mark logoUrl={logoUrl} />
-              <p className="text-lg font-black text-white">{name}</p>
-            </div>
-            <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-              {address ? (
-                <div className="flex min-w-0 items-center gap-3">
-                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/10 text-orange-400 ring-1 ring-white/10">
-                    <PinIcon />
-                  </span>
-                  <span className="min-w-0 text-left">
-                    <span className="block text-[11px] font-bold tracking-wide text-slate-400">{label.address}</span>
-                    <span className="block text-sm font-bold leading-6 break-words whitespace-pre-line text-slate-100">{address}</span>
-                  </span>
-                </div>
-              ) : null}
-              {showMap ? (
-                <a
-                  href={mapUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className={`inline-flex min-h-11 w-full shrink-0 items-center justify-center gap-2 rounded-full bg-orange-500 px-5 text-sm font-black text-white transition hover:bg-orange-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300 sm:w-auto ${editMode ? "pointer-events-none" : ""}`}
-                  tabIndex={editMode ? -1 : undefined}
-                >
-                  <PinIcon />
-                  {mapLabel}
-                  <span className="sr-only">{label.newWindow}</span>
-                </a>
-              ) : null}
-            </div>
+        <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-8 sm:gap-y-4">
+          <div className="flex shrink-0 items-center gap-3">
+            <Mark logoUrl={logoUrl} />
+            <p className="text-lg font-black text-white">{name}</p>
           </div>
-          <nav aria-label={label.nav} className="flex flex-wrap gap-x-6 lg:shrink-0 lg:flex-col lg:items-end lg:gap-y-1">
-            {links.map((link) => (
+          <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+            {address ? (
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/10 text-orange-400 ring-1 ring-white/10">
+                  <PinIcon />
+                </span>
+                <span className="min-w-0 text-left">
+                  <span className="block text-[11px] font-bold tracking-wide text-slate-400">{label.address}</span>
+                  <span className="block text-sm font-bold leading-6 break-words whitespace-pre-line text-slate-100">{address}</span>
+                </span>
+              </div>
+            ) : null}
+            {showMap ? (
               <a
-                key={link.label}
-                href={link.href}
-                className={`inline-flex min-h-11 items-center text-sm font-bold text-slate-200 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300 ${editMode ? "pointer-events-none" : ""}`}
+                href={mapUrl}
+                target="_blank"
+                rel="noreferrer"
+                className={`inline-flex min-h-11 w-full shrink-0 items-center justify-center gap-2 rounded-full bg-orange-500 px-5 text-sm font-black text-white transition hover:bg-orange-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300 sm:w-auto ${editMode ? "pointer-events-none" : ""}`}
                 tabIndex={editMode ? -1 : undefined}
               >
-                {link.label}
+                <PinIcon />
+                {mapLabel}
+                <span className="sr-only">{label.newWindow}</span>
               </a>
-            ))}
-          </nav>
+            ) : null}
+          </div>
         </div>
         {copyright.trim() ? (
           <p className="mt-8 border-t border-white/10 pt-5 text-center text-sm" style={{ color: metaColor ?? "#64748b" }}>
