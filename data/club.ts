@@ -265,9 +265,6 @@ function venueFrom(hint: string) {
 
 const footerContacts: FooterContacts = {
   address: venueFrom(contactDoc.hint),
-  phone: contactDoc.whatsapp,
-  whatsapp: contactDoc.whatsapp,
-  email: contactDoc.email,
   mapLabel: "查看地图",
   mapUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent("Elite Centre, 22 Hung To Road, Kwun Tong, Hong Kong")}`,
 };

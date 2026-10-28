@@ -572,7 +572,7 @@ function EditorForm({
     return (
       <FormShell
         title="页脚"
-        hint="社团名用标志里的中文名。关于我们、桌游库、加入我们用导航里的字。地点、电话、WhatsApp、邮箱和地图按钮在这里改。英文页仍显示这些原文。"
+        hint="社团名用标志里的中文名。关于我们、桌游库、加入我们用导航里的字。地点和地图按钮排在标志那一行。英文页仍显示这些原文。"
         scrollKey={key}
       >
         <FormGroup title="文案">
@@ -583,18 +583,9 @@ function EditorForm({
             改导航文字
           </button>
         </FormGroup>
-        <FormGroup title="联系">
+        <FormGroup title="地点">
           <Field label="地点">
             <textarea rows={3} value={contacts.address} onChange={(input) => patchContacts({ address: input.target.value })} className={fieldClass} />
-          </Field>
-          <Field label="电话">
-            <input value={contacts.phone} onChange={(input) => patchContacts({ phone: input.target.value })} inputMode="tel" autoComplete="tel" className={fieldClass} />
-          </Field>
-          <Field label="WhatsApp">
-            <input value={contacts.whatsapp} onChange={(input) => patchContacts({ whatsapp: input.target.value })} className={fieldClass} />
-          </Field>
-          <Field label="邮箱">
-            <input value={contacts.email} onChange={(input) => patchContacts({ email: input.target.value })} inputMode="email" autoComplete="email" className={fieldClass} />
           </Field>
         </FormGroup>
         <FormGroup title="链接">

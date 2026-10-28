@@ -1,8 +1,5 @@
 export type FooterContacts = {
   address: string;
-  phone: string;
-  whatsapp: string;
-  email: string;
   mapLabel: string;
   mapUrl: string;
 };
@@ -19,15 +16,10 @@ export function footerContactsFrom(value: unknown, seed: FooterContacts): Footer
   const raw = asRecord(value);
   return {
     address: text(raw.address, seed.address),
-    phone: text(raw.phone, seed.phone),
-    whatsapp: text(raw.whatsapp, seed.whatsapp),
-    email: text(raw.email, seed.email),
     mapLabel: text(raw.mapLabel, seed.mapLabel),
     mapUrl: text(raw.mapUrl, seed.mapUrl),
   };
 }
-
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /** http(s) only. Rejects javascript:, data:, and credentialed URLs. */
 export function safeExternalUrl(value: string) {
@@ -50,25 +42,4 @@ export function safeMapUrl(value: string) {
   const trimmed = value.trim();
   if (/^geo:-?\d+(\.\d+)?,-?\d+(\.\d+)?(\?[^#]*)?$/i.test(trimmed)) return trimmed;
   return "";
-}
-
-export function phoneHref(value: string) {
-  const compact = value.trim().replace(/[^\d+]/g, "");
-  const digits = compact.replace(/\D/g, "");
-  if (digits.length < 8) return "";
-  return `tel:${compact.startsWith("+") ? `+${digits}` : digits}`;
-}
-
-export function whatsappHref(value: string) {
-  const trimmed = value.trim();
-  if (/^https?:\/\//i.test(trimmed)) return safeExternalUrl(trimmed);
-  const digits = trimmed.replace(/\D/g, "");
-  if (digits.length < 8) return "";
-  return `https://wa.me/${digits}`;
-}
-
-export function emailHref(value: string) {
-  const trimmed = value.trim();
-  if (!EMAIL.test(trimmed)) return "";
-  return `mailto:${trimmed}`;
 }
